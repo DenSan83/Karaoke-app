@@ -7,9 +7,15 @@ session_start();
 // Check system requirements (skip for installing page)
 require_once 'app/Services/SystemCheck.php';
 
+// Auto-detect base path from script location
+$scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /git_projects/08.karaoke_admin/index.php or /index.php
+$basePath = dirname($scriptName); // e.g., /git_projects/08.karaoke_admin or /
+if ($basePath === '/' || $basePath === '\\') {
+    $basePath = '';
+}
+
 // Get the requested route
 $request = $_SERVER['REQUEST_URI'];
-$basePath = '/git_projects/08.karaoke_admin'; // This should be dynamically determined or configured
 $route = str_replace($basePath, '', parse_url($request, PHP_URL_PATH));
 $route = trim($route, '/');
 
