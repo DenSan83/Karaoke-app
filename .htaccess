@@ -1,0 +1,10 @@
+RewriteEngine On
+#RewriteBase /
+
+# Deny access to sensitive files (Apache 2.4 syntax)
+<FilesMatch "^\.ht|\.json$|\.md$">
+    Require all denied
+</FilesMatch>
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php?r=$1 [L,QSA]

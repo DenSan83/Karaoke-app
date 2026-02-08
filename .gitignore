@@ -1,0 +1,31 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependency directories
+/vendor/
+/node_modules/
+
+# Environment variables
+.env
+.htpwd
+
+# Logs and databases
+*.log
+*.sqlite
+
+# User-generated content / Media
+/public/media/videos/
+/public/uploads/
+
+# Temporary files
+/temp/
+
+# Project-installed binaries
+/bin/

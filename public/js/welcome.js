@@ -1,0 +1,77 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    const inviteInput = document.getElementById('invite-code');
+    const nameInput = document.getElementById('guest-name');
+    const error1 = document.getElementById('error-1');
+    const error2 = document.getElementById('error-2');
+
+    const verifyBtn = document.getElementById('verify-btn');
+    const startBtn = document.getElementById('start-btn');
+
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', async () => {
+            const code = inviteInput.value.trim().toUpperCase();
+            if (!code) return;
+
+            try {
+                const res = await fetch('api/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (data.rejoining) {
+                        window.location.href = 'guest-dashboard';
+                    } else {
+                        step1.classList.remove('active');
+                        step2.classList.add('active');
+                        nameInput.focus();
+                    }
+                } else {
+                    error1.textContent = data.error || 'Invalid code';
+                }
+            } catch (err) {
+                error1.textContent = 'Connection error. Try again.';
+            }
+        });
+    }
+
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            try {
+                const res = await fetch('api/add-guest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.href = 'guest-dashboard';
+                } else {
+                    error2.textContent = data.error || 'Failed to join';
+                }
+            } catch (err) {
+                error2.textContent = 'Connection error. Try again.';
+            }
+        });
+    }
+
+    // Enter key support
+    if (inviteInput) {
+        inviteInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyBtn.click();
+        });
+    }
+    if (nameInput) {
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startBtn.click();
+        });
+    }
+});

@@ -1,0 +1,147 @@
+.welcome-page {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+    padding: 20px;
+}
+
+.welcome-card {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    text-align: center;
+    border: 1px solid #333;
+}
+
+.welcome-logo {
+    font-size: 2.5rem;
+    font-weight: bold;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+}
+
+.welcome-subtitle {
+    color: #888;
+    margin-bottom: 40px;
+    font-size: 1.1rem;
+}
+
+.step {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeIn 0.5s ease;
+}
+
+.step.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.input-group {
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.welcome-input {
+    width: 100%;
+    padding: 15px;
+    background-color: #252525;
+    border: 2px solid #333;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1.1rem;
+    box-sizing: border-box;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.welcome-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(187, 134, 252, 0.2);
+}
+
+.welcome-btn {
+    background: linear-gradient(45deg, var(--primary-color), #9965f4);
+    color: #000;
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    margin-top: 10px;
+}
+
+.welcome-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(187, 134, 252, 0.4);
+}
+
+.welcome-btn:active {
+    transform: translateY(0);
+}
+
+.error-message {
+    color: var(--error-color);
+    font-size: 0.9rem;
+    min-height: 20px;
+}
+
+.choice-divider {
+    display: flex;
+    align-items: center;
+    margin: 30px 0;
+    color: #444;
+}
+
+.choice-divider::before,
+.choice-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #333;
+    margin: 0 15px;
+}
+
+.qr-placeholder {
+    padding: 20px;
+    background: #252525;
+    border-radius: 12px;
+    border: 1px dashed #444;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* Specific class for name input to remove letter spacing */
+.name-input {
+    letter-spacing: normal !important;
+}

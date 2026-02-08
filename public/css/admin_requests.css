@@ -1,0 +1,81 @@
+.requests-card {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin-bottom: 30px;
+    margin-top: 20px;
+}
+
+.header-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+}
+
+.header-with-action h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.guest-item {
+    background: #252525;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #333;
+}
+
+.guest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.guest-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+}
+
+.song-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.song-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-top: 1px solid #333;
+    font-size: 0.9rem;
+}
+
+.song-row:first-child {
+    border-top: none;
+}
+
+.no-requests {
+    color: #666;
+    font-style: italic;
+}
+
+/* Sub-route specific navigation adjustments */
+.nav-back-to-queue {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-options-active {
+    background-color: var(--primary-color) !important;
+    color: #000 !important;
+    margin-top: auto;
+}

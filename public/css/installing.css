@@ -1,0 +1,278 @@
+/* Installation Page Styles */
+
+.install-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.install-header {
+    text-align: center;
+    margin-bottom: 40px;
+    color: white;
+}
+
+.install-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.install-header p {
+    font-size: 1.1rem;
+    color: #b0b0b0;
+}
+
+.install-content {
+    max-width: 1200px;
+    width: 100%;
+}
+
+.install-content h2 {
+    color: white;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+}
+
+/* Installation Options */
+.install-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.install-option {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 30px;
+    transition: all 0.3s ease;
+}
+
+.install-option:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(187, 134, 252, 0.3);
+}
+
+.option-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.option-icon {
+    font-size: 2rem;
+}
+
+.option-header h3 {
+    color: white;
+    margin: 0;
+    flex: 1;
+    font-size: 1.3rem;
+}
+
+.option-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.option-badge.recommended {
+    background: var(--secondary-color);
+    color: #000;
+}
+
+.option-badge.warning {
+    background: #ff6b6b;
+    color: white;
+}
+
+.option-description {
+    color: #b0b0b0;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.option-pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.pros,
+.cons {
+    font-size: 0.9rem;
+}
+
+.pros strong {
+    color: var(--secondary-color);
+}
+
+.cons strong {
+    color: #ff6b6b;
+}
+
+.pros ul,
+.cons ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+    color: #b0b0b0;
+}
+
+.pros li,
+.cons li {
+    margin: 4px 0;
+}
+
+.install-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.install-btn:hover {
+    background: var(--primary-hover);
+    transform: scale(1.02);
+}
+
+/* Back Button */
+.back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 30px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Manual Instructions */
+.instructions-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.instructions-box ol {
+    color: white;
+    line-height: 2;
+    padding-left: 25px;
+}
+
+.instructions-box code {
+    background: rgba(187, 134, 252, 0.2);
+    color: var(--secondary-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    display: inline-block;
+    margin: 5px 0;
+}
+
+/* Progress Indicator */
+.progress-indicator {
+    text-align: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+#progress-message {
+    color: #b0b0b0;
+    font-size: 1.1rem;
+}
+
+/* Log Box */
+.log-box {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    color: #b0b0b0;
+    font-size: 0.9rem;
+}
+
+/* Result Messages */
+.result-message {
+    text-align: center;
+    padding: 40px;
+    border-radius: 15px;
+    margin: 20px 0;
+}
+
+.result-message.success {
+    background: rgba(3, 218, 198, 0.1);
+    border: 2px solid var(--secondary-color);
+}
+
+.result-message.error {
+    background: rgba(255, 107, 107, 0.1);
+    border: 2px solid #ff6b6b;
+}
+
+.result-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 20px;
+}
+
+.result-message h3 {
+    color: white;
+    margin-bottom: 15px;
+    font-size: 1.8rem;
+}
+
+.result-message p {
+    color: #b0b0b0;
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+}
+
+/* Hidden class */
+.hidden {
+    display: none !important;
+}

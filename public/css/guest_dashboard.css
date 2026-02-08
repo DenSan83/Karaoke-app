@@ -1,0 +1,389 @@
+.guest-dashboard {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.guest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+}
+
+.guest-welcome h1 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin: 0;
+    text-align: left;
+}
+
+.guest-welcome p {
+    margin: 5px 0 0;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.search-section {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.search-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.search-group {
+    display: flex;
+    gap: 10px;
+}
+
+.search-input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    background-color: #2a2a2a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.add-btn {
+    background-color: var(--secondary-color);
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    flex-shrink: 0;
+}
+
+.add-btn:hover {
+    transform: scale(1.02);
+    opacity: 0.9;
+}
+
+.my-queue h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #ccc;
+}
+
+#guest-songs {
+    list-style: none;
+    padding: 0;
+}
+
+.song-item {
+    background-color: #2c2c2c;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid #333;
+    animation: slideIn 0.3s ease;
+    position: relative;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.song-status {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    color: #000;
+}
+
+.song-status.waiting {
+    background-color: #ffb74d;
+    /* Orange */
+    color: #000;
+    box-shadow: 0 0 8px rgba(255, 183, 77, 0.4);
+}
+
+.song-status.accepted {
+    background-color: var(--secondary-color);
+    /* Teal */
+    color: #000;
+    box-shadow: 0 0 8px rgba(3, 218, 198, 0.4);
+}
+
+.song-status.done {
+    background-color: #4fc3f7;
+    /* Light Blue */
+    color: #000;
+    opacity: 0.7;
+}
+
+.song-status.refused {
+    background-color: var(--error-color);
+    color: #fff;
+    opacity: 0.8;
+}
+
+.video-info {
+    flex-grow: 1;
+    min-width: 0;
+    /* Prevent flex overflow */
+}
+
+.video-title {
+    font-weight: 500;
+    color: #eee;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.logout-icon {
+    color: var(--error-color);
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 50%;
+    background: rgba(207, 102, 121, 0.1);
+    transition: background 0.3s;
+}
+
+.logout-icon:hover {
+    background: rgba(207, 102, 121, 0.2);
+}
+
+/* Reorder Styles (Synced with admin.css) */
+.my-queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.guest-reorder-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #888;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    width: auto;
+    flex-grow: 0;
+    flex-shrink: 0;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.guest-reorder-btn.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: #000;
+}
+
+.song-item.dragging {
+    opacity: 0.4;
+    background: #444;
+}
+
+.song-item[draggable="true"] {
+    cursor: move;
+    border-style: dashed;
+    border-color: #555;
+}
+
+.drag-placeholder {
+    height: 80px;
+    background: rgba(187, 134, 252, 0.05);
+    border: 2px dashed var(--primary-color);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    list-style: none;
+}
+
+/* Collision Modal & Notifications - Renamed for absolute uniqueness */
+.guest-modal-overlay {
+    display: none !important;
+    position: fixed !important;
+    z-index: 100000 !important;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.92) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.guest-modal-content {
+    background-color: #1a1a1a !important;
+    padding: 40px;
+    border-radius: 24px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    border: 1px solid #444;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    color: #fff;
+}
+
+.guest-modal-content h2 {
+    color: var(--secondary-color);
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+}
+
+.guest-modal-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    color: #eee;
+}
+
+.guest-modal-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.guest-modal-btn {
+    flex: 1;
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.guest-modal-btn.confirm {
+    background: var(--secondary-color);
+    color: #000;
+}
+
+.guest-modal-btn.cancel {
+    background: #333;
+    color: #fff;
+}
+
+.guest-modal-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+.notification-banner {
+    background: rgba(187, 134, 252, 0.1);
+    border: 1px solid var(--primary-color);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: fadeIn 0.5s ease;
+}
+
+.notification-banner .icon {
+    font-size: 1.2rem;
+}
+
+.notification-banner .text {
+    flex-grow: 1;
+    font-size: 0.9rem;
+}
+
+.remove-song-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #444;
+    color: #666;
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+    padding: 0;
+    margin-left: 5px;
+}
+
+.remove-song-btn:hover {
+    background: rgba(207, 102, 121, 0.1);
+    color: var(--error-color);
+    border-color: var(--error-color);
+    transform: scale(1.05);
+}
+
+/* Helper classes for inline style migration */
+.request-status-msg {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    min-height: 20px;
+}
+
+.request-status-msg.error {
+    color: var(--error-color);
+}
+
+.request-status-msg.muted {
+    color: #888;
+}
+
+.request-status-msg.success {
+    color: var(--secondary-color);
+}
+
+.guest-modal-overlay.active {
+    display: flex !important;
+}
+
+.empty-queue-msg {
+    color: #666;
+    text-align: center;
+    padding: 40px;
+    background: #1e1e1e;
+    border-radius: 12px;
+    border: 1px dashed #333;
+}
