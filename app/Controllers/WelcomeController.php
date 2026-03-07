@@ -27,15 +27,79 @@ class WelcomeController {
             header('Location: ./');
             exit;
         }
+
+        // Calculate song statuses
+        require_once 'app/Models/Playlist.php';
+        require_once 'app/Models/PlayerStatus.php';
+        $playlistModel = new Playlist();
+        $statusModel = new PlayerStatus();
+        
+        $playlist = json_decode($playlistModel->getAll(), true) ?? [];
+        $status = $statusModel->get();
+        $currentIndex = $status['current_index'] ?? -1;
+
+        $songStatusMap = [];
+
+        // Build a map of videoId -> first future index
+        $futureIndices = [];
+        $currentVideoId = null;
+
+        foreach ($playlist as $index => $video) {
+            if ($index == $currentIndex) {
+                $currentVideoId = $video['id'];
+            }
+            if ($index > $currentIndex) {
+                if (!isset($futureIndices[$video['id']])) {
+                    $futureIndices[$video['id']] = $index;
+                }
+            }
+        }
+
+        // Prepare helper for view
+        $calculateStatus = function($videoId, $baseStatus) use ($currentIndex, $currentVideoId, $futureIndices) {
+            if ($baseStatus !== 'Accepted') return $baseStatus; // Keep 'Waiting', 'Refused' etc.
+
+            if ($videoId === $currentVideoId) {
+                return "Singing now";
+            }
+
+            if (isset($futureIndices[$videoId])) {
+                $dist = $futureIndices[$videoId] - $currentIndex;
+                if ($dist === 1) {
+                    return "Coming up";
+                } elseif ($dist > 1) {
+                    return "$dist songs left";
+                }
+            }
+
+            // If Accepted but not current or future, assume Done
+            return "Done";
+        };
+
         require_once 'views/guest_dashboard.php';
     }
 
     public function verifyCode() {
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
-        $code = $data['code'] ?? '';
+        $code = trim($data['code'] ?? '');
 
-        if ($code === 'TODAY26') {
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings();
+        
+        // Check for new system configuration
+        $guestCodes = $settings->get('guest_codes'); // Returns null if not set (no default arg)
+
+        $isValid = false;
+
+        if ($guestCodes !== null && is_array($guestCodes)) {
+            // New system is active - strictly check against the list (case sensitive)
+            if (in_array($code, $guestCodes)) {
+                $isValid = true;
+            }
+        }
+
+        if ($isValid) {
             $response = ['success' => true];
             
             // Check for persistent guest cookie
@@ -96,6 +160,13 @@ class WelcomeController {
         require_once 'app/Services/YouTubeService.php';
         $ytService = new YouTubeService();
 
+        // Check if this is a playlist
+        if ($ytService->isPlaylistUrl($url)) {
+            $this->guestAddPlaylist($url, $ytService);
+            return;
+        }
+
+        // Single video handling
         $videoId = $ytService->extractVideoId($url);
         if (!$videoId) {
             http_response_code(400);
@@ -105,6 +176,34 @@ class WelcomeController {
 
         // Check for duplicates before adding
         $originalSinger = $this->guestModel->findDuplicateRequest($videoId, $_SESSION['guest_id']);
+        
+        $playlistDuplicate = null;
+        if (!$originalSinger) {
+            require_once 'app/Models/Playlist.php';
+            $playlistModel = new Playlist();
+            $playlistJson = $playlistModel->getAll();
+            $playlist = json_decode($playlistJson, true) ?? [];
+            
+            error_log("Checking playlist for duplicate videoId: $videoId");
+            error_log("Playlist count: " . count($playlist));
+
+            foreach ($playlist as $video) {
+                if ($video['id'] === $videoId) {
+                    error_log("Found in playlist. User: " . ($video['user'] ?? 'null'));
+                    // Check if it's not me
+                    $currentGuestName = $_SESSION['guest_name'] ?? '';
+                    if (isset($video['user']) && $video['user'] !== $currentGuestName) {
+                        $playlistDuplicate = $video;
+                        error_log("Marked as playlist duplicate against $currentGuestName");
+                    } else {
+                        error_log("Self-duplicate ignored or user missing");
+                    }
+                    break;
+                }
+            }
+        } else {
+            error_log("Found in active guests list");
+        }
         
         $metadata = $ytService->getMetadata($videoId);
         
@@ -123,12 +222,79 @@ class WelcomeController {
                 $result['duplicateFound'] = true;
                 $result['originalSingerName'] = $originalSinger['name'];
                 $result['originalSingerId'] = $originalSinger['id'];
+            } elseif ($playlistDuplicate) {
+                $result['duplicateFound'] = true;
+                $result['originalSingerName'] = $playlistDuplicate['user'];
+                
+                // Try to find the guest ID for this user to allow joining
+                $allGuests = $this->guestModel->getAll();
+                $guestId = 'unknown';
+                if (isset($allGuests['guests'])) {
+                    foreach ($allGuests['guests'] as $g) {
+                        if ($g['name'] === $playlistDuplicate['user']) {
+                            $guestId = $g['id'];
+                            break;
+                        }
+                    }
+                }
+                $result['originalSingerId'] = $guestId;
             } else {
                 $result['duplicateFound'] = false;
             }
         }
 
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    }
+
+    private function guestAddPlaylist($url, $ytService) {
+        $playlistId = $ytService->extractPlaylistId($url);
+        if (!$playlistId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid playlist URL']);
+            return;
+        }
+
+        $result = $ytService->getPlaylistVideos($playlistId, 20);
+        
+        if (isset($result['error'])) {
+            http_response_code(400);
+            echo json_encode(['error' => $result['error']]);
+            return;
+        }
+
+        $videos = $result['videos'];
+        $total = $result['total'];
+        $addedSongs = [];
+
+        // Add each video from playlist
+        foreach ($videos as $videoData) {
+            $originalSinger = $this->guestModel->findDuplicateRequest($videoData['id'], $_SESSION['guest_id']);
+            
+            $songData = [
+                'id' => $videoData['id'],
+                'url' => "https://www.youtube.com/watch?v={$videoData['id']}",
+                'title' => $videoData['title'],
+                'added_at' => time()
+            ];
+
+            $songResult = $this->guestModel->addSong($_SESSION['guest_id'], $songData);
+            if (isset($songResult['success'])) {
+                $addedSongs[] = [
+                    'videoId' => $videoData['id'],
+                    'title' => $videoData['title'],
+                    'duplicateFound' => $originalSinger ? true : false,
+                    'originalSingerName' => $originalSinger ? $originalSinger['name'] : null
+                ];
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'is_playlist' => true,
+            'songs' => $addedSongs,
+            'total_in_playlist' => $total,
+            'added_count' => count($addedSongs)
+        ], JSON_UNESCAPED_UNICODE);
     }
 
     public function joinSinger() {
@@ -247,5 +413,102 @@ class WelcomeController {
 
         $guest = $this->guestModel->getById($_SESSION['guest_id']);
         echo json_encode($guest['notifications'] ?? [], JSON_UNESCAPED_UNICODE);
+    }
+
+    public function searchSongs() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['guest_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $q = $_GET['q'] ?? '';
+        if (strlen($q) < 3) {
+            echo json_encode([]);
+            return;
+        }
+
+        $q = mb_strtolower($q);
+        $results = [];
+        $seenIds = [];
+
+        $results = [];
+        $seenIds = [];
+
+        // 1. Get current playlist status to filter out played/playing songs
+        require_once 'app/Models/Playlist.php';
+        require_once 'app/Models/PlayerStatus.php';
+        $playlistModel = new Playlist();
+        $statusModel = new PlayerStatus();
+        
+        $playlistJson = $playlistModel->getAll(); // returns JSON string
+        $playlist = json_decode($playlistJson, true) ?? [];
+        $status = $statusModel->get();
+        $currentIndex = $status['current_index'] ?? -1;
+
+        $forbiddenVideoIds = [];
+        $playlistFutureMap = [];
+
+        foreach ($playlist as $index => $video) {
+            if ($index <= $currentIndex) {
+                $forbiddenVideoIds[] = $video['id'];
+            } else {
+                // Keep track of future songs to identify them as "playlist" source even if found in guest history
+                $playlistFutureMap[$video['id']] = true;
+            }
+        }
+
+        // 2. Search in other guests' lists (Prioritize social / active requests)
+        $allGuests = $this->guestModel->getAll();
+        if (isset($allGuests['guests'])) {
+            foreach ($allGuests['guests'] as $g) {
+                // Skip current guest's own songs from "social" match
+                if ($g['id'] === $_SESSION['guest_id']) continue;
+
+                if (isset($g['songs'])) {
+                    foreach ($g['songs'] as $song) {
+                        if (in_array($song['id'], $forbiddenVideoIds)) continue;
+
+                        if (isset($song['title']) && strpos(mb_strtolower($song['title']), $q) !== false) {
+                            if (!in_array($song['id'], $seenIds)) {
+                                $results[] = [
+                                    'id' => $song['id'],
+                                    'title' => $song['title'],
+                                    // If it's in future playlist, mark as playlist (or guest_history, but user said not to show distinct history if available in playlist? 
+                                    // Actually, duplicate logic handles "if in playlist, show as playlist".
+                                    // But here we are searching.
+                                    // If I search "Hello", and it's requested by Bob (future).
+                                    // Should it show "History" or "Playlist"?
+                                    // Probably "Playlist" is more "official".
+                                    // Let's check if it is in future playlist.
+                                    'source' => isset($playlistFutureMap[$song['id']]) ? 'playlist' : 'guest_history'
+                                ];
+                                $seenIds[] = $song['id'];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Search in global playlist (Future only)
+        foreach ($playlist as $index => $video) {
+            if ($index <= $currentIndex) continue;
+
+            if (isset($video['title']) && strpos(mb_strtolower($video['title']), $q) !== false) {
+                if (!in_array($video['id'], $seenIds)) {
+                    $results[] = [
+                        'id' => $video['id'],
+                        'title' => $video['title'],
+                        'source' => 'playlist'
+                    ];
+                    $seenIds[] = $video['id'];
+                }
+            }
+        }
+
+        // Limit results
+        echo json_encode(array_slice($results, 0, 10), JSON_UNESCAPED_UNICODE);
     }
 }

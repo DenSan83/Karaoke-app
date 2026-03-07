@@ -66,4 +66,94 @@ class YouTubeService {
             'oembed_success' => $oembedSuccess
         ];
     }
+
+    /**
+     * Check if URL is a YouTube playlist
+     */
+    public function isPlaylistUrl($url) {
+        return strpos($url, 'list=') !== false;
+    }
+
+    /**
+     * Extract playlist ID from URL
+     */
+    public function extractPlaylistId($url) {
+        $pattern = '/[?&]list=([a-zA-Z0-9_-]+)/';
+        if (preg_match($pattern, $url, $matches)) {
+            return $matches[1];
+        }
+        return null;
+    }
+
+    /**
+     * Get videos from a YouTube playlist (max 20)
+     * Returns array of ['id' => videoId, 'title' => title]
+     */
+    public function getPlaylistVideos($playlistId, $maxVideos = 20) {
+        // Try multiple Invidious instances
+        $invidiousInstances = [
+            "https://invidious.io.lol",
+            "https://inv.nadeko.net",
+            "https://invidious.nerdvpn.de"
+        ];
+        
+        $lastError = '';
+        
+        foreach ($invidiousInstances as $instance) {
+            $invidiousUrl = "{$instance}/api/v1/playlists/{$playlistId}";
+            
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'user_agent' => 'Mozilla/5.0',
+                    'ignore_errors' => true
+                ]
+            ]);
+            
+            $response = @file_get_contents($invidiousUrl, false, $context);
+            
+            if ($response === false) {
+                $lastError = "Failed to connect to {$instance}";
+                continue;
+            }
+            
+            $data = json_decode($response, true);
+            
+            if (!isset($data['videos']) || !is_array($data['videos'])) {
+                $lastError = "Invalid response from {$instance}";
+                continue;
+            }
+            
+            if (empty($data['videos'])) {
+                return ['error' => 'Playlist is empty'];
+            }
+            
+            // Success! Process videos
+            $videos = [];
+            $count = 0;
+            
+            foreach ($data['videos'] as $video) {
+                if ($count >= $maxVideos) {
+                    break;
+                }
+                
+                if (isset($video['videoId']) && isset($video['title'])) {
+                    $videos[] = [
+                        'id' => $video['videoId'],
+                        'title' => $video['title']
+                    ];
+                    $count++;
+                }
+            }
+            
+            return [
+                'videos' => $videos,
+                'total' => count($data['videos']),
+                'fetched' => count($videos)
+            ];
+        }
+        
+        // All instances failed
+        return ['error' => 'Failed to fetch playlist data. Please try again later.'];
+    }
 }

@@ -269,22 +269,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = videoUrlInput.value.trim();
         const userNameInput = document.getElementById('userName');
         const user = userNameInput ? userNameInput.value.trim() : '';
-        const videoId = extractVideoID(url);
 
         if (!user) {
             showMessage('User name is required', 'error');
             return;
         }
 
-        if (!videoId) {
-            showMessage('Invalid YouTube URL', 'error');
+        if (!url) {
+            showMessage('Please enter a URL', 'error');
             return;
         }
 
         closeModal();
         videoUrlInput.value = '';
-        if (userNameInput) userNameInput.value = ''; // Clear name input too
-        showMessage('Adding video to queue...', 'success');
+        if (userNameInput) userNameInput.value = '';
+        showMessage('Adding to queue...', 'success');
 
         fetch('api/add_video', {
             method: 'POST',
@@ -294,6 +293,16 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    if (data.is_playlist) {
+                        // Playlist response
+                        const msg = data.total_in_playlist > 20
+                            ? `Added first 20 of ${data.total_in_playlist} videos from playlist`
+                            : `Added ${data.added_count} videos from playlist`;
+                        showMessage(msg, 'success');
+                    } else {
+                        // Single video response
+                        showMessage('Video added to queue', 'success');
+                    }
                     fetchPlaylist();
                 } else {
                     showMessage(data.error || 'Failed to add video', 'error');

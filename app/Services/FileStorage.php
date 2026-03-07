@@ -19,7 +19,9 @@ class FileStorage {
 
         // Acquire shared lock (multiple readers can read simultaneously)
         if (flock($fp, LOCK_SH)) {
-            $content = fread($fp, filesize($filepath));
+            clearstatcache(true, $filepath);
+            $size = filesize($filepath);
+            $content = $size > 0 ? fread($fp, $size) : '';
             flock($fp, LOCK_UN);
             fclose($fp);
             
@@ -68,11 +70,12 @@ class FileStorage {
         // Acquire exclusive lock immediately
         if (flock($fp, LOCK_EX)) {
             // Read current data
+            clearstatcache(true, $filepath);
             $size = filesize($filepath);
             $content = $size > 0 ? fread($fp, $size) : '';
-            $data = $content ? json_decode($content, true) : $default;
+            $data = !empty($content) ? json_decode($content, true) : $default;
             
-            if (!$data) {
+            if (!is_array($data)) {
                 $data = $default;
             }
 

@@ -31,7 +31,10 @@
         <section class="search-section">
             <h3>Request a Song</h3>
             <div class="search-group">
-                <input type="text" id="song-url" class="search-input" placeholder="Paste YouTube URL here...">
+                <div class="input-wrapper">
+                    <input type="text" id="song-url" class="search-input" placeholder="Paste YouTube URL here" autocomplete="off">
+                    <div id="search-results" class="search-dropdown"></div>
+                </div>
                 <button id="request-btn" class="add-btn" title="Add Song">➜</button>
             </div>
             <p id="request-msg" class="request-status-msg"></p>
@@ -60,8 +63,19 @@
                                 <div class="video-title"><?php echo htmlspecialchars($song['title'] ?? 'Song Request'); ?></div>
                                 <div class="video-id"><?php echo htmlspecialchars($song['id'] ?? ''); ?></div>
                             </div>
-                            <div class="song-status <?php echo strtolower($song['status'] ?? 'waiting'); ?>">
-                                <?php echo htmlspecialchars($song['status'] ?? 'Waiting'); ?>
+                            <?php 
+                                $displayStatus = isset($calculateStatus) 
+                                    ? $calculateStatus($song['id'], $song['status'] ?? 'Waiting') 
+                                    : ($song['status'] ?? 'Waiting'); 
+                                
+                                $statusClass = strtolower($song['status'] ?? 'waiting');
+                                if ($displayStatus === 'Singing now') $statusClass .= ' singing-now';
+                                elseif ($displayStatus === 'Coming up') $statusClass .= ' coming-up';
+                                elseif (strpos($displayStatus, 'songs left') !== false) $statusClass .= ' songs-left';
+                                elseif ($displayStatus === 'Done') $statusClass = 'done'; // Override status class for Done
+                            ?>
+                            <div class="song-status <?php echo $statusClass; ?>">
+                                <?php echo htmlspecialchars($displayStatus); ?>
                             </div>
                             <button class="remove-song-btn" onclick="confirmRemoveSong('<?php echo $song['id']; ?>', '<?php echo addslashes($song['title']); ?>')" title="Remove Song">×</button>
                         </li>

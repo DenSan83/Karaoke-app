@@ -39,6 +39,9 @@
                 <a href="logout" id="logoutLink" class="submenu-item logout-item">
                     <span class="icon">⏻</span> <span class="btn-text">Logout</span>
                 </a>
+                <a href="admin/codes" class="submenu-item">
+                    <span class="icon">🔑</span> <span class="btn-text">Access Codes</span>
+                </a>
             </div>
             <button id="optionsBtn" class="sidebar-btn options-toggle-btn">
                 <span class="icon">⚙️</span> <span class="btn-text">Options</span>

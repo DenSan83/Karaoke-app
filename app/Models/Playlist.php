@@ -3,9 +3,10 @@
 require_once 'app/Services/FileStorage.php';
 
 class Playlist {
-    private $file = 'playlist.json';
+    private $file;
 
     public function __construct() {
+        $this->file = __DIR__ . '/../../playlist.json';
         if (!file_exists($this->file)) {
             FileStorage::writeJson($this->file, []);
         }
@@ -28,6 +29,12 @@ class Playlist {
         require_once 'app/Services/YouTubeService.php';
         $ytService = new YouTubeService();
 
+        // Check if this is a playlist URL
+        if ($ytService->isPlaylistUrl($url)) {
+            return $this->addPlaylist($url, $user, $ytService);
+        }
+
+        // Single video handling
         $videoId = $ytService->extractVideoId($url);
         if (!$videoId) {
             return ['error' => 'Invalid YouTube URL'];
@@ -62,6 +69,52 @@ class Playlist {
             }
             
             return ['success' => true, 'video' => $newVideo];
+        } else {
+            return ['error' => 'Failed to save playlist'];
+        }
+    }
+
+    private function addPlaylist($url, $user, $ytService) {
+        $playlistId = $ytService->extractPlaylistId($url);
+        if (!$playlistId) {
+            return ['error' => 'Invalid playlist URL'];
+        }
+
+        $result = $ytService->getPlaylistVideos($playlistId, 20);
+        
+        if (isset($result['error'])) {
+            return ['error' => $result['error']];
+        }
+
+        $videos = $result['videos'];
+        $total = $result['total'];
+        $addedVideos = [];
+
+        // Add each video from the playlist
+        foreach ($videos as $videoData) {
+            $newVideo = [
+                'id' => $videoData['id'],
+                'title' => $videoData['title'],
+                'user' => $user,
+                'added_at' => time()
+            ];
+            
+            $addedVideos[] = $newVideo;
+        }
+
+        // Atomic batch add
+        $success = FileStorage::atomicUpdate($this->file, function($playlist) use ($addedVideos) {
+            return array_merge($playlist, $addedVideos);
+        }, []);
+
+        if ($success) {
+            return [
+                'success' => true,
+                'is_playlist' => true,
+                'videos' => $addedVideos,
+                'total_in_playlist' => $total,
+                'added_count' => count($addedVideos)
+            ];
         } else {
             return ['error' => 'Failed to save playlist'];
         }

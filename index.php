@@ -58,6 +58,16 @@ switch ($route) {
         $controller->index();
         break;
 
+    case 'admin/codes':
+        $controller = new AdminController();
+        $controller->codes();
+        break;
+
+    case 'api/update_code':
+        $controller = new AdminController();
+        $controller->updateCode();
+        break;
+
     case 'admin/requests':
         $controller = new AdminController();
         $controller->requests();
@@ -206,6 +216,12 @@ switch ($route) {
     case 'api/refuse_request':
         $controller = new ApiController();
         $controller->refuseRequest();
+        break;
+
+    case 'api/search_songs':
+        require_once 'app/Controllers/WelcomeController.php';
+        $controller = new WelcomeController();
+        $controller->searchSongs();
         break;
 
     default:

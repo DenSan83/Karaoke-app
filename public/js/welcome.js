@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (verifyBtn) {
         verifyBtn.addEventListener('click', async () => {
-            const code = inviteInput.value.trim().toUpperCase();
+            const code = inviteInput.value.trim();
             if (!code) return;
 
             try {

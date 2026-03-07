@@ -22,7 +22,7 @@
                 <div class="choice-divider">OR</div>
                 <div class="input-group">
                     <label>Enter Invite Code</label>
-                    <input type="text" id="invite-code" class="welcome-input" placeholder="••••••••" maxlength="8">
+                    <input type="text" id="invite-code" class="welcome-input" placeholder="Enter code...">
                 </div>
                 <button id="verify-btn" class="welcome-btn">Enter Party</button>
                 <div id="error-1" class="error-message"></div>

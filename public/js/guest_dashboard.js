@@ -15,9 +15,72 @@ const songList = document.getElementById('guest-songs');
 let reorderMode = false;
 let draggedItemIndex = null;
 
-// guestSongs and activeNotifications are expected to be defined globally in the view
 // let guestSongs = ...
 // let activeNotifications = ...
+
+// Search & Autocomplete Logic
+let searchTimeout = null;
+const searchResults = document.getElementById('search-results');
+
+urlInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const q = e.target.value.trim();
+
+    if (q.length < 3) {
+        searchResults.classList.remove('active');
+        return;
+    }
+
+    // specific youtube url check - don't search if it looks like a URL
+    if (q.includes('youtube.com') || q.includes('youtu.be')) {
+        searchResults.classList.remove('active');
+        return;
+    }
+
+    searchTimeout = setTimeout(() => performSearch(q), 300);
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!urlInput.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.classList.remove('active');
+    }
+});
+
+async function performSearch(query) {
+    try {
+        const res = await fetch(`api/search_songs?q=${encodeURIComponent(query)}`);
+        const results = await res.json();
+
+        if (results && results.length > 0) {
+            renderSearchResults(results);
+        } else {
+            searchResults.classList.remove('active');
+        }
+    } catch (err) {
+        console.error("Search error:", err);
+    }
+}
+
+function renderSearchResults(results) {
+    searchResults.innerHTML = '';
+    results.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'search-item';
+        div.innerHTML = `
+            <span class="title">${item.title}</span>
+            <span class="source">${item.source === 'playlist' ? 'Playlist' : 'History'}</span>
+        `;
+        div.addEventListener('click', () => {
+            urlInput.value = `https://www.youtube.com/watch?v=${item.id}`;
+            searchResults.classList.remove('active');
+            // Optional: Auto-click request if desired, but maybe safer to let user click
+            // requestBtn.click(); 
+        });
+        searchResults.appendChild(div);
+    });
+    searchResults.classList.add('active');
+}
 
 requestBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();
