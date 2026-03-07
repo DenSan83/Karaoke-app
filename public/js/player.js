@@ -221,12 +221,12 @@ function showInterstitial(video) {
     nextOverlay.classList.remove('hidden');
     document.getElementById('player-container').classList.add('hidden'); // Ensure player is hidden
 
-    // Wait 4 seconds then play
+    // Wait 8 seconds then play
     setTimeout(() => {
         nextOverlay.classList.add('hidden');
         document.getElementById('player-container').classList.remove('hidden');
         startPlayback(video);
-    }, 4000);
+    }, 8000);
 }
 
 function startPlayback(video) {
