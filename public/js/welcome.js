@@ -1,7 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Auto-fill code from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    let codeParam = urlParams.get('c');
+
+    // Robust check: if ?c is missing, check if first key exists with no value (e.g. ?CODE)
+    // or if there is an empty key (=CODE)
+    if (!codeParam) {
+        for (const [key, value] of urlParams.entries()) {
+            if (key && !value) { codeParam = key; break; } // ?CODE
+            if (!key && value) { codeParam = value; break; } // ?=CODE
+        }
+    }
+
+    const inviteInput = document.getElementById('invite-code');
+
+    if (codeParam && inviteInput) {
+        inviteInput.value = codeParam;
+        // Trigger verification automatically if it's a direct QR scan link
+        setTimeout(() => {
+            const verifyBtn = document.getElementById('verify-btn');
+            if (verifyBtn && inviteInput.value.trim()) verifyBtn.click();
+        }, 300);
+    }
     const step1 = document.getElementById('step-1');
     const step2 = document.getElementById('step-2');
-    const inviteInput = document.getElementById('invite-code');
     const nameInput = document.getElementById('guest-name');
     const error1 = document.getElementById('error-1');
     const error2 = document.getElementById('error-2');

@@ -1,4 +1,5 @@
 let initialCodes = [];
+let qr = null;
 
 // Tab switching
 function openTab(tabId) {
@@ -35,6 +36,39 @@ function renderCodes() {
     }
 
     checkChanges();
+    updateQRCode();
+}
+
+function updateQRCode() {
+    const section = document.getElementById('qrcode-section');
+    const container = document.getElementById('qrcode');
+    if (!section || !container) return;
+
+    if (window.currentCodes.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    section.classList.remove('hidden');
+    const firstCode = window.currentCodes[0];
+
+    // Create base URL (strip /admin/codes)
+    const baseUrl = window.location.origin + window.location.pathname.split('/admin')[0];
+    const joinUrl = `${baseUrl}/?c=${encodeURIComponent(firstCode)}`;
+
+    if (!qr) {
+        qr = new QRCode(container, {
+            text: joinUrl,
+            width: 160,
+            height: 160,
+            colorDark: "#ffffff",
+            colorLight: "#1e1e1e",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    } else {
+        qr.clear();
+        qr.makeCode(joinUrl);
+    }
 }
 
 function checkChanges() {

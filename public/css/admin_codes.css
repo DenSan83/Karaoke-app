@@ -244,3 +244,45 @@
     padding: 40px;
     font-style: italic;
 }
+
+/* QR Code Section */
+.qrcode-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.qrcode-wrapper {
+    background: #ffffff;
+    /* White background for better contrast */
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.qrcode-wrapper img {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+}
+
+.qrcode-wrapper canvas {
+    display: none;
+}
+
+.qrcode-hint {
+    margin-top: 15px;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+}

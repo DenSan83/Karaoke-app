@@ -35,6 +35,11 @@
                 <div id="in-person" class="tab-content active">
                     <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Manage active codes for guests at the venue.</p>
                     
+                    <div id="qrcode-section" class="qrcode-section hidden">
+                        <div id="qrcode" class="qrcode-wrapper"></div>
+                        <p class="qrcode-hint">Scan to join the party automatically</p>
+                    </div>
+
                     <ul id="code-list" class="code-list">
                         <!-- Items injected via JS -->
                     </ul>
@@ -54,6 +59,7 @@
     <script>
         window.currentCodes = <?php echo json_encode($guestCodes ?? []); ?>;
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="../public/js/admin_codes.js"></script>
 </body>
 </html>

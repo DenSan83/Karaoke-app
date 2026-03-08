@@ -15,14 +15,19 @@
 
             <!-- Step 1: Choice/Code -->
             <div id="step-1" class="step active">
-                <div class="qr-placeholder">
-                    Scan the DJ's QR Code<br>
-                    <small>(Coming soon)</small>
-                </div>
-                <div class="choice-divider">OR</div>
                 <div class="input-group">
                     <label>Enter Invite Code</label>
-                    <input type="text" id="invite-code" class="welcome-input" placeholder="Enter code...">
+                    <?php 
+                        $inviteCode = $_GET['c'] ?? '';
+                        if (!$inviteCode && !empty($_GET)) {
+                            // Support ?=CODE
+                            if (isset($_GET[''])) { $inviteCode = $_GET['']; }
+                            // Support ?CODE (CODE is the first key with no value)
+                            else { $firstKey = key($_GET); if ($_GET[$firstKey] === '') { $inviteCode = $firstKey; } }
+                        }
+                    ?>
+                    <input type="text" id="invite-code" class="welcome-input" placeholder="Enter code..." 
+                           value="<?php echo htmlspecialchars($inviteCode); ?>">
                 </div>
                 <button id="verify-btn" class="welcome-btn">Enter Party</button>
                 <div id="error-1" class="error-message"></div>
