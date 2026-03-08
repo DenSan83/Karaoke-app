@@ -36,11 +36,17 @@
                 <a href="admin/requests" class="submenu-item">
                     <span class="icon">🎵</span> <span class="btn-text">Requests</span>
                 </a>
-                <a href="logout" id="logoutLink" class="submenu-item logout-item">
-                    <span class="icon">⏻</span> <span class="btn-text">Logout</span>
-                </a>
                 <a href="admin/codes" class="submenu-item">
                     <span class="icon">🔑</span> <span class="btn-text">Access Codes</span>
+                </a>
+                <a href="logout" id="logoutLink" class="submenu-item logout-item">
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                            <line x1="12" y1="2" x2="12" y2="12"></line>
+                        </svg>
+                    </span> 
+                    <span class="btn-text">Logout</span>
                 </a>
             </div>
             <button id="optionsBtn" class="sidebar-btn options-toggle-btn">
