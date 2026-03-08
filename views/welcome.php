@@ -53,6 +53,17 @@
         </div>
     </div>
 
+    <!-- Goodbye Modal -->
+    <div id="goodbye-modal" class="guest-modal-overlay">
+        <div class="guest-modal-content">
+            <h2>See you soon!</h2>
+            <p class="guest-modal-text">We're not accepting any more requests.<br>Thanks for joining the party!</p>
+            <div class="guest-modal-actions">
+                <button id="goodbye-ok" class="guest-modal-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script src="public/js/welcome.js"></script>
 </body>
 </html>

@@ -45,6 +45,7 @@ class AdminController {
         }
 
         $hotelCode = $settings->get('hotel_code');
+        $allowNewSessions = $settings->get('allow_new_sessions', true);
 
         require_once 'views/admin_codes.php';
     }
@@ -140,6 +141,26 @@ class AdminController {
             echo json_encode(['success' => true, 'code' => $code]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Failed to save hotel code']);
+        }
+    }
+
+    public function toggleSession() {
+        if (!isset($_SESSION['user'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        $allow = (bool)($data['allow'] ?? true);
+
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings();
+        if ($settings->set('allow_new_sessions', $allow)) {
+            echo json_encode(['success' => true, 'allow' => $allow]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to update session status']);
         }
     }
 }

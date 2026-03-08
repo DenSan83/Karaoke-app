@@ -21,6 +21,18 @@ class WelcomeController {
             header('Location: ./');
             exit;
         }
+
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings();
+        if (!$settings->get('allow_new_sessions', true)) {
+            // Master toggle is OFF - End session for this guest
+            session_destroy();
+            // Clear persistent cookie as well
+            setcookie('karaoke_guest_id', '', time() - 3600, '/');
+            header('Location: ./?session_ended=1');
+            exit;
+        }
+
         $guest = $this->guestModel->getById($_SESSION['guest_id']);
         if (!$guest) {
             unset($_SESSION['guest_id']);
@@ -87,6 +99,13 @@ class WelcomeController {
         require_once 'app/Models/Settings.php';
         $settings = new Settings();
         
+        // GLOBAL SESSION STATUS CHECK
+        $allowNew = $settings->get('allow_new_sessions', true);
+        if (!$allowNew) {
+            echo json_encode(['success' => false, 'error' => 'Sessions are currently closed by the administrator.']);
+            exit;
+        }
+
         // Check for new system configuration
         $guestCodes = $settings->get('guest_codes'); // Returns null if not set (no default arg)
 
@@ -171,6 +190,14 @@ class WelcomeController {
 
     public function addGuest() {
         header('Content-Type: application/json');
+        
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings();
+        if (!$settings->get('allow_new_sessions', true)) {
+            echo json_encode(['success' => false, 'error' => 'Registration is currently closed.']);
+            exit;
+        }
+
         $data = json_decode(file_get_contents('php://input'), true);
         $name = $data['name'] ?? '';
 

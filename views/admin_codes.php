@@ -17,6 +17,17 @@
         </header>
 
         <main>
+            <div class="session-master-toggle">
+                <div class="toggle-info">
+                    <h3>Guest Enrollment</h3>
+                    <p id="session-status-text"><?= $allowNewSessions ? 'Currently allowing new guests' : 'New guests are blocked' ?></p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="session-toggle" <?= $allowNewSessions ? 'checked' : '' ?>>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
             <div class="codes-card">
                 <div class="tabs">
                     <button class="tab-btn" onclick="openTab('distant')">Distant</button>
@@ -82,6 +93,7 @@
     <script>
         window.currentCodes = <?php echo json_encode($guestCodes ?? []); ?>;
         window.hotelCode = <?= json_encode($hotelCode) ?>;
+        window.allowNewSessions = <?= json_encode($allowNewSessions) ?>;
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="../public/js/admin_codes.js"></script>

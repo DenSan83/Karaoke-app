@@ -78,6 +78,11 @@ switch ($route) {
         $controller->generateHotelCode();
         break;
 
+    case 'api/toggle_session':
+        $controller = new AdminController();
+        $controller->toggleSession();
+        break;
+
     case 'admin/requests':
         $controller = new AdminController();
         $controller->requests();

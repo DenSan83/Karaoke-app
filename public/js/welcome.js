@@ -99,4 +99,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') startBtn.click();
         });
     }
+
+    // Check for session ended message
+    if (urlParams.has('session_ended')) {
+        const modal = document.getElementById('goodbye-modal');
+        const okBtn = document.getElementById('goodbye-ok');
+        if (modal) {
+            modal.classList.add('active');
+            if (okBtn) {
+                okBtn.addEventListener('click', () => {
+                    modal.classList.remove('active');
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                });
+            }
+        }
+    }
 });

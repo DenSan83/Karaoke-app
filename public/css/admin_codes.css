@@ -290,3 +290,84 @@
     font-size: 0.9rem;
     font-weight: 500;
 }
+
+/* Session Master Toggle */
+.session-master-toggle {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 30px;
+    max-width: 600px;
+    margin: 20px auto 10px;
+    border: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.toggle-info h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.toggle-info p {
+    margin: 5px 0 0;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* Base toggle switch styles */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #333;
+    transition: .4s;
+    border: 1px solid #444;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked+.slider {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+input:checked+.slider:before {
+    transform: translateX(26px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}

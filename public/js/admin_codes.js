@@ -367,6 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateDistantBtn = document.getElementById('generate-distant-btn');
     const generateHotelBtn = document.getElementById('generate-hotel-btn');
     const downloadHotelBtn = document.getElementById('download-hotel-qr-btn');
+    const sessionToggle = document.getElementById('session-toggle');
+    const sessionStatusText = document.getElementById('session-status-text');
 
     if (addBtn) addBtn.addEventListener('click', addCode);
     if (newInput) {
@@ -377,6 +379,36 @@ document.addEventListener('DOMContentLoaded', () => {
     if (generateDistantBtn) generateDistantBtn.addEventListener('click', generateDistantCode);
     if (generateHotelBtn) generateHotelBtn.addEventListener('click', generateHotelCode);
     if (downloadHotelBtn) downloadHotelBtn.addEventListener('click', downloadHotelQR);
+
+    if (sessionToggle) {
+        sessionToggle.addEventListener('change', async () => {
+            const isAllowed = sessionToggle.checked;
+            sessionToggle.disabled = true;
+
+            try {
+                const res = await fetch('../api/toggle_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ allow: isAllowed })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (sessionStatusText) {
+                        sessionStatusText.textContent = isAllowed ? 'Currently allowing new guests' : 'New guests are blocked';
+                    }
+                } else {
+                    alert(data.error || 'Failed to update session');
+                    sessionToggle.checked = !isAllowed;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error');
+                sessionToggle.checked = !isAllowed;
+            } finally {
+                sessionToggle.disabled = false;
+            }
+        });
+    }
 
     if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
