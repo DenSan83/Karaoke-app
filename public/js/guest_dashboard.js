@@ -12,6 +12,12 @@ const msgDiv = document.getElementById('request-msg');
 const reorderBtn = document.getElementById('reorder-btn');
 const songList = document.getElementById('guest-songs');
 
+// Karaoke Confirmation Modal
+const karaokeModal = document.getElementById('guest-karaoke-confirm-modal');
+const karaokeText = document.getElementById('guest-karaoke-confirm-text');
+const karaokeYes = document.getElementById('guest-karaoke-yes');
+const karaokeNo = document.getElementById('guest-karaoke-no');
+
 let reorderMode = false;
 let draggedItemIndex = null;
 
@@ -120,6 +126,10 @@ requestBtn.addEventListener('click', async () => {
             } else {
                 setTimeout(() => window.location.reload(), 1000);
             }
+        } else if (data.needsConfirmation) {
+            msgDiv.textContent = "";
+            requestBtn.disabled = false;
+            showKaraokeConfirmModal(data.title, url);
         } else {
             msgDiv.textContent = data.error || "Failed to add song";
             msgDiv.className = 'request-status-msg error';
@@ -314,6 +324,53 @@ function showCollisionModal(singerName, singerId, videoId) {
             });
         } catch (e) { console.error("[COLLISION] Remove API Error:", e); }
         window.location.reload();
+    };
+}
+
+function showKaraokeConfirmModal(title, url) {
+    if (!karaokeModal || !karaokeText || !karaokeYes || !karaokeNo) return;
+
+    karaokeText.innerHTML = `You are adding:<br><strong>"${title}"</strong><br><br>The title doesn't mention "karaoke".<br>Are you sure this is a karaoke track?`;
+    karaokeModal.classList.add('active');
+
+    karaokeYes.onclick = async () => {
+        karaokeModal.classList.remove('active');
+        msgDiv.textContent = "Adding to your list...";
+        msgDiv.className = 'request-status-msg muted';
+        requestBtn.disabled = true;
+
+        try {
+            const res = await fetch('api/guest_add_song', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    song: { url: url },
+                    force: true
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                msgDiv.textContent = "Successfully added!";
+                msgDiv.className = 'request-status-msg success';
+                urlInput.value = '';
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                msgDiv.textContent = data.error || "Failed to add song";
+                msgDiv.className = 'request-status-msg error';
+                requestBtn.disabled = false;
+            }
+        } catch (err) {
+            console.error("Force Add Error:", err);
+            msgDiv.textContent = "Error: " + err.message;
+            msgDiv.className = 'request-status-msg error';
+            requestBtn.disabled = false;
+        }
+    };
+
+    karaokeNo.onclick = () => {
+        karaokeModal.classList.remove('active');
+        urlInput.value = '';
+        msgDiv.textContent = "";
     };
 }
 

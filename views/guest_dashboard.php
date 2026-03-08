@@ -33,6 +33,13 @@
             <?php endif; ?>
         </div>
 
+        <div class="search-help">
+            <span class="help-icon">💡</span>
+            <p class="help-text">
+                <b>To request a song:</b> Open YouTube, copy the link of your favorite video (<b>ensure "karaoke" is in the title</b>), and paste it below. Then hit ➜!
+            </p>
+        </div>
+
         <section class="search-section">
             <h3>Request a Song</h3>
             <div class="search-group">
@@ -109,6 +116,18 @@
             <p id="social-notif-text" class="guest-modal-text"></p>
             <div class="guest-modal-actions">
                 <button id="social-notif-ok" class="guest-modal-btn confirm">OK!!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Karaoke Confirmation Modal -->
+    <div id="guest-karaoke-confirm-modal" class="guest-modal-overlay">
+        <div class="guest-modal-content">
+            <h2>Are you sure?</h2>
+            <p id="guest-karaoke-confirm-text" class="guest-modal-text"></p>
+            <div class="guest-modal-actions">
+                <button id="guest-karaoke-yes" class="guest-modal-btn confirm">Yes, add track</button>
+                <button id="guest-karaoke-no" class="guest-modal-btn cancel">No, cancel</button>
             </div>
         </div>
     </div>

@@ -278,11 +278,24 @@ class WelcomeController {
         }
         
         $metadata = $ytService->getMetadata($videoId);
+        $title = $metadata['title'] ?? 'Unknown Title';
+        
+        // CHECK FOR "KARAOKE" KEYWORD
+        $isForced = (bool)($data['force'] ?? false);
+        if (!$isForced && stripos($title, 'karaoke') === false) {
+            echo json_encode([
+                'success' => false, 
+                'needsConfirmation' => true,
+                'title' => $title,
+                'videoId' => $videoId
+            ]);
+            return;
+        }
         
         $songData = [
             'id' => $videoId,
             'url' => $url,
-            'title' => $metadata['title'],
+            'title' => $title,
             'added_at' => time()
         ];
 
