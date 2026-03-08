@@ -17,6 +17,128 @@ class AdminController {
         require_once 'views/admin_requests.php';
     }
 
+    public function logs() {
+        if (!isset($_SESSION['user'])) {
+            header('Location: login');
+            exit;
+        }
+
+        require_once 'app/Models/SystemLog.php';
+        require_once 'app/Models/Guest.php';
+        $sysLog = new SystemLog();
+        $guestModel = new Guest();
+        
+        $allGuestsData = $guestModel->getAll();
+        $allGuests = $allGuestsData['guests'] ?? [];
+        $userLogs = $sysLog->getLogs('user_login');
+        $updated = false;
+
+        // 1. Resolve missing guestIds in existing logs
+        foreach ($userLogs as &$log) {
+            if (!isset($log['data']['guestId'])) {
+                $name = $log['data']['name'] ?? '';
+                foreach ($allGuests as $g) {
+                    if ($g['name'] === $name) {
+                        $log['data']['guestId'] = $g['id'];
+                        $updated = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. Ensure all current guests have a login log entry
+        $loggedGuestIds = array_filter(array_map(function($l) { 
+            return $l['data']['guestId'] ?? null; 
+        }, $userLogs));
+
+        foreach ($allGuests as $g) {
+            if (!in_array($g['id'], $loggedGuestIds)) {
+                $entryData = [
+                    'guestId' => $g['id'],
+                    'name' => $g['name'],
+                    'code' => 'History',
+                    'category' => 'in person',
+                    'timestamp' => $g['created_at'] ?? time()
+                ];
+                $sysLog->log('user_login', $entryData);
+                $updated = true;
+            }
+        }
+
+        // Fetch logs again if we updated anything to ensure we have the latest
+        if ($updated) {
+            $userLogs = $sysLog->getLogs('user_login');
+        }
+
+        // 3. Aggregate Tracks from Queue (playlist.json) and Guests (guests.json)
+        $trackLogs = [];
+        $addedVideoUserPairs = []; // To avoid duplicates if same song/user in both
+
+        // A. From Playlist (Active/Accepted songs)
+        require_once 'app/Models/Playlist.php';
+        $playlistModel = new Playlist();
+        $playlistData = json_decode($playlistModel->getAll(), true) ?: [];
+        
+        // Helper to find category by name
+        $findCategory = function($name) use ($allGuests, $userLogs) {
+            // 1. Try current guests
+            foreach ($allGuests as $g) {
+                if ($g['name'] === $name) return $g['category'] ?? 'in person';
+            }
+            // 2. Try historical logs
+            foreach ($userLogs as $l) {
+                if (($l['data']['name'] ?? '') === $name) return $l['data']['category'] ?? 'in person';
+            }
+            // 3. Fallback for admin or unknown
+            return 'admin';
+        };
+
+        foreach ($playlistData as $track) {
+            $user = $track['user'] ?? 'Admin';
+            $trackLogs[] = [
+                'title' => $track['title'] ?? 'Unknown',
+                'userName' => $user,
+                'category' => $findCategory($user),
+                'added_at' => $track['added_at'] ?? time(),
+                'status' => 'Queued'
+            ];
+            $addedVideoUserPairs[] = ($track['id'] ?? '') . $user;
+        }
+
+        // B. From Guests (Requested/Waiting songs)
+        foreach ($allGuests as $g) {
+            if (isset($g['songs']) && is_array($g['songs'])) {
+                foreach ($g['songs'] as $song) {
+                    $pair = ($song['id'] ?? '') . $g['name'];
+                    if (in_array($pair, $addedVideoUserPairs)) continue;
+
+                    $trackLogs[] = [
+                        'title' => $song['title'] ?? 'Unknown',
+                        'userName' => $g['name'],
+                        'category' => $g['category'] ?? 'in person',
+                        'added_at' => $song['added_at'] ?? time(),
+                        'status' => $song['status'] ?? 'Waiting'
+                    ];
+                }
+            }
+        }
+
+        // Sort tracks: newest first
+        usort($trackLogs, function($a, $b) {
+            return $b['added_at'] - $a['added_at'];
+        });
+
+        // Sort logs: newest first
+        usort($userLogs, function($a, $b) {
+            $tsA = $a['data']['timestamp'] ?? $a['timestamp'];
+            $tsB = $b['data']['timestamp'] ?? $b['timestamp'];
+            return $tsB - $tsA;
+        });
+
+        require_once 'views/admin_logs.php';
+    }
+
     public function codes() {
         if (!isset($_SESSION['user'])) {
             header('Location: ../login');
@@ -162,5 +284,115 @@ class AdminController {
         } else {
             echo json_encode(['success' => false, 'error' => 'Failed to update session status']);
         }
+    }
+
+    public function deleteGuest() {
+        if (!isset($_SESSION['user'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        $guestId = $data['guestId'] ?? '';
+
+        if (empty($guestId)) {
+            echo json_encode(['success' => false, 'error' => 'Guest ID is required']);
+            exit;
+        }
+
+        require_once 'app/Models/Guest.php';
+        $guestModel = new Guest();
+        
+        if ($guestModel->remove($guestId)) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Guest not found or could not be deleted']);
+        }
+    }
+
+    public function downloadTracksList() {
+        if (!isset($_SESSION['user'])) {
+            header('Location: login');
+            exit;
+        }
+
+        require_once 'app/Models/Guest.php';
+        $guestModel = new Guest();
+        $allGuestsData = $guestModel->getAll();
+        $allGuests = $allGuestsData['guests'] ?? [];
+
+        require_once 'app/Models/Playlist.php';
+        $playlistModel = new Playlist();
+        $playlistData = json_decode($playlistModel->getAll(), true) ?: [];
+
+        $lines = [];
+        $lines[] = "KARAOKE SONG LIST - " . date('Y-m-d H:i:s');
+        $lines[] = "--------------------------------------------------";
+        $lines[] = str_pad("#", 5) . str_pad("TITLE", 50) . str_pad("USER", 20) . "GROUP";
+        $lines[] = "--------------------------------------------------";
+
+        $tracks = [];
+        $addedPairs = [];
+
+        // Helper to find category by name (simpler version for export)
+        $findCategory = function($name) use ($allGuests) {
+            foreach ($allGuests as $g) {
+                if ($g['name'] === $name) return $g['category'] ?? 'in person';
+            }
+            return 'admin';
+        };
+
+        // A. Add from active playlist
+        foreach ($playlistData as $track) {
+            $user = $track['user'] ?? 'Admin';
+            $tracks[] = [
+                'title' => $track['title'] ?? 'Unknown',
+                'userName' => $user,
+                'category' => $findCategory($user),
+                'added_at' => $track['added_at'] ?? time()
+            ];
+            $addedPairs[] = ($track['id'] ?? '') . $user;
+        }
+
+        // B. Add from guest requests (if not already in playlist)
+        foreach ($allGuests as $g) {
+            if (isset($g['songs']) && is_array($g['songs'])) {
+                foreach ($g['songs'] as $song) {
+                    $pair = ($song['id'] ?? '') . $g['name'];
+                    if (in_array($pair, $addedPairs)) continue;
+
+                    $tracks[] = [
+                        'title' => $song['title'] ?? 'Unknown',
+                        'userName' => $g['name'],
+                        'category' => $g['category'] ?? 'in person',
+                        'added_at' => $song['added_at'] ?? time()
+                    ];
+                }
+            }
+        }
+
+        // Sort by added_at (oldest first for the export list usually)
+        usort($tracks, function($a, $b) {
+            return $a['added_at'] - $b['added_at'];
+        });
+
+        foreach ($tracks as $index => $t) {
+            $num = $index + 1;
+            $lines[] = str_pad($num, 5) . 
+                       str_pad(mb_strimwidth($t['title'], 0, 48, "..."), 50) . 
+                       str_pad(mb_strimwidth($t['userName'], 0, 18, "..."), 20) . 
+                       $t['category'];
+        }
+
+        $content = implode("\r\n", $lines);
+        $filename = "song_list_" . date('Y-m-d') . ".txt";
+
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($content));
+        echo $content;
+        exit;
     }
 }

@@ -83,9 +83,24 @@ switch ($route) {
         $controller->toggleSession();
         break;
 
+    case 'api/delete_guest':
+        $controller = new AdminController();
+        $controller->deleteGuest();
+        break;
+
     case 'admin/requests':
         $controller = new AdminController();
         $controller->requests();
+        break;
+
+    case 'admin/logs':
+        $controller = new AdminController();
+        $controller->logs();
+        break;
+
+    case 'admin/logs/download_tracks':
+        $controller = new AdminController();
+        $controller->downloadTracksList();
         break;
 
     case 'login':

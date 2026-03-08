@@ -119,6 +119,8 @@ class WelcomeController {
             // New system is active - strictly check against the list (case sensitive)
             if (in_array($code, $guestCodes)) {
                 $isValid = true;
+                $_SESSION['used_code'] = $code;
+                $_SESSION['user_category'] = 'in person';
             }
         }
 
@@ -128,6 +130,8 @@ class WelcomeController {
             if ($hotelCode && $code === $hotelCode) {
                 $isValid = true;
                 $isHotelJoin = true;
+                $_SESSION['used_code'] = $code;
+                $_SESSION['user_category'] = 'hotel';
             }
         }
 
@@ -140,6 +144,8 @@ class WelcomeController {
                 $isValid = true;
                 $isDistantInvite = true;
                 $distantName = $decrypted['name'];
+                $_SESSION['used_code'] = $code;
+                $_SESSION['user_category'] = 'distant';
                 
                 // LOG THIS ACCESS
                 $logFile = 'distant_access.log';
@@ -153,6 +159,16 @@ class WelcomeController {
                     $_SESSION['guest_name'] = $result['guest']['name'];
                     setcookie('karaoke_guest_id', $result['guest']['id'], time() + 14400, '/', '', false, true);
                     $autoLogin = true;
+
+                    // LOG LOGIN
+                    require_once 'app/Models/SystemLog.php';
+                    $sysLog = new SystemLog();
+                    $sysLog->log('user_login', [
+                        'guestId' => $result['guest']['id'],
+                        'name' => $result['guest']['name'],
+                        'code' => $code,
+                        'category' => 'distant'
+                    ]);
                 }
             }
         }
@@ -208,6 +224,16 @@ class WelcomeController {
             
             // Set persistent identity cookie for 4 hours
             setcookie('karaoke_guest_id', $result['guest']['id'], time() + 14400, '/', '', false, true);
+
+            // LOG LOGIN
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog();
+            $sysLog->log('user_login', [
+                'guestId' => $result['guest']['id'],
+                'name' => $name,
+                'code' => $_SESSION['used_code'] ?? 'Unknown',
+                'category' => $_SESSION['user_category'] ?? 'in person'
+            ]);
         }
         echo json_encode($result);
     }

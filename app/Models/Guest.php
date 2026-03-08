@@ -224,4 +224,18 @@ class Guest {
         }
         return false;
     }
+
+    public function remove($id) {
+        $data = $this->getData();
+        $originalCount = count($data['guests']);
+        $data['guests'] = array_filter($data['guests'], function($g) use ($id) {
+            return $g['id'] !== $id;
+        });
+        $data['guests'] = array_values($data['guests']);
+
+        if (count($data['guests']) !== $originalCount) {
+            return $this->saveData($data);
+        }
+        return false;
+    }
 }
