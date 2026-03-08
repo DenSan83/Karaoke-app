@@ -93,6 +93,7 @@ class WelcomeController {
         $isValid = false;
         $distantName = null;
         $autoLogin = false;
+        $isHotelJoin = false;
 
         if ($guestCodes !== null && is_array($guestCodes)) {
             // New system is active - strictly check against the list (case sensitive)
@@ -106,6 +107,7 @@ class WelcomeController {
             $hotelCode = $settings->get('hotel_code');
             if ($hotelCode && $code === $hotelCode) {
                 $isValid = true;
+                $isHotelJoin = true;
             }
         }
 
@@ -144,7 +146,7 @@ class WelcomeController {
             
             // Check for persistent guest cookie
             $guestId = $_COOKIE['karaoke_guest_id'] ?? null;
-            if ($guestId) {
+            if ($guestId && !$isHotelJoin) {
                 $guest = $this->guestModel->getById($guestId);
                 if ($guest) {
                     // Auto-login if they have a valid cookie
