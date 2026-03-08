@@ -21,9 +21,17 @@
                         $inviteCode = $_GET['c'] ?? '';
                         if (!$inviteCode && !empty($_GET)) {
                             // Support ?=CODE
-                            if (isset($_GET[''])) { $inviteCode = $_GET['']; }
+                            if (isset($_GET['']) && $_GET[''] !== '') { 
+                                $inviteCode = $_GET['']; 
+                            }
                             // Support ?CODE (CODE is the first key with no value)
-                            else { $firstKey = key($_GET); if ($_GET[$firstKey] === '') { $inviteCode = $firstKey; } }
+                            else { 
+                                $firstKey = key($_GET); 
+                                // Ignore 'r' which is the internal routing parameter from .htaccess
+                                if ($firstKey !== 'r' && $_GET[$firstKey] === '') { 
+                                    $inviteCode = $firstKey; 
+                                } 
+                            }
                         }
                     ?>
                     <input type="text" id="invite-code" class="welcome-input" placeholder="Enter code..." 
