@@ -68,6 +68,16 @@ switch ($route) {
         $controller->updateCode();
         break;
 
+    case 'api/generate_distant_code':
+        $controller = new AdminController();
+        $controller->generateDistantCode();
+        break;
+
+    case 'api/generate_hotel_code':
+        $controller = new AdminController();
+        $controller->generateHotelCode();
+        break;
+
     case 'admin/requests':
         $controller = new AdminController();
         $controller->requests();

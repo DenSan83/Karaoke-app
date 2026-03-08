@@ -25,11 +25,34 @@
                 </div>
 
                 <div id="distant" class="tab-content">
-                    <div class="placeholder-text">Remote access codes configuration coming soon...</div>
+                    <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Generate a secure unique join link for a specific remote guest.</p>
+                    
+                    <div class="distant-form">
+                        <div class="input-group">
+                            <label style="color: var(--primary-color); display: block; margin-bottom: 8px;">Guest Name</label>
+                            <input type="text" id="distant-name" class="new-code-input" style="width: 100%; margin-bottom: 15px;" placeholder="Full Name">
+                        </div>
+                        <div class="input-group">
+                            <label style="color: var(--primary-color); display: block; margin-bottom: 8px;">Guest Email</label>
+                            <input type="email" id="distant-email" class="new-code-input" style="width: 100%; margin-bottom: 20px;" placeholder="email@example.com">
+                        </div>
+                        <button id="generate-distant-btn" class="save-btn" style="margin-bottom: 25px;">Download Distant QR Code (PNG)</button>
+                    </div>
                 </div>
 
                 <div id="hotel" class="tab-content">
-                    <div class="placeholder-text">Hotel room integration settings coming soon...</div>
+                    <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Generate a random 6-digit code for hotel guests. These appear in the 'In-person' list.</p>
+                    
+                    <div id="hotel-gen-section" style="text-align: center; margin-bottom: 25px;">
+                        <button id="generate-hotel-btn" class="save-btn" style="max-width: 300px;">Generate New Hotel Code</button>
+                    </div>
+
+                    <div id="hotel-qrcode-section" class="qrcode-section hidden">
+                        <div id="hotel-qrcode" class="qrcode-wrapper"></div>
+                        <p id="hotel-code-display" style="margin-top: 15px; font-size: 1.5rem; font-family: monospace; letter-spacing: 4px; color: var(--secondary-color); font-weight: bold;"></p>
+                        <p class="qrcode-hint">Scan to skip code entry</p>
+                        <button id="download-hotel-qr-btn" class="back-link" style="margin-top: 15px;">Download QR Image (PNG)</button>
+                    </div>
                 </div>
 
                 <div id="in-person" class="tab-content active">
@@ -58,6 +81,7 @@
 
     <script>
         window.currentCodes = <?php echo json_encode($guestCodes ?? []); ?>;
+        window.hotelCode = <?= json_encode($hotelCode) ?>;
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="../public/js/admin_codes.js"></script>

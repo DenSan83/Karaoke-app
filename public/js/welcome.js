@@ -45,9 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
 
                 if (data.success) {
-                    if (data.rejoining) {
+                    if (data.rejoining || data.autoLogin) {
                         window.location.href = 'guest-dashboard';
                     } else {
+                        if (data.distantName) {
+                            nameInput.value = data.distantName;
+                        }
                         step1.classList.remove('active');
                         step2.classList.add('active');
                         nameInput.focus();

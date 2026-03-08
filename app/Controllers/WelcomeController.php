@@ -91,6 +91,8 @@ class WelcomeController {
         $guestCodes = $settings->get('guest_codes'); // Returns null if not set (no default arg)
 
         $isValid = false;
+        $distantName = null;
+        $autoLogin = false;
 
         if ($guestCodes !== null && is_array($guestCodes)) {
             // New system is active - strictly check against the list (case sensitive)
@@ -99,8 +101,46 @@ class WelcomeController {
             }
         }
 
+        // Check for dedicated Hotel code
+        if (!$isValid) {
+            $hotelCode = $settings->get('hotel_code');
+            if ($hotelCode && $code === $hotelCode) {
+                $isValid = true;
+            }
+        }
+
+        // Check for "Distant" codes if not already valid
+        if (!$isValid) {
+            require_once 'app/Services/EncryptionService.php';
+            $decrypted = EncryptionService::decrypt($code);
+            
+            if ($decrypted && isset($decrypted['type']) && $decrypted['type'] === 'distant') {
+                $isValid = true;
+                
+                // LOG THIS ACCESS
+                $logFile = 'distant_access.log';
+                $logEntry = date('Y-m-d H:i:s') . " - One-click access by: " . $decrypted['name'] . " (" . $decrypted['email'] . ") using code: " . substr($code, 0, 10) . "...\n";
+                file_put_contents($logFile, $logEntry, FILE_APPEND);
+
+                // AUTO-REGISTER AND LOGIN
+                $result = $this->guestModel->add($decrypted['name']);
+                if (isset($result['success']) && $result['success']) {
+                    $_SESSION['guest_id'] = $result['guest']['id'];
+                    $_SESSION['guest_name'] = $result['guest']['name'];
+                    setcookie('karaoke_guest_id', $result['guest']['id'], time() + 14400, '/', '', false, true);
+                    $autoLogin = true;
+                }
+            }
+        }
+
         if ($isValid) {
             $response = ['success' => true];
+            if (isset($autoLogin) && $autoLogin) {
+                $response['autoLogin'] = true;
+            }
+            if (isset($distantName)) {
+                $response['distantName'] = $distantName;
+            }
             
             // Check for persistent guest cookie
             $guestId = $_COOKIE['karaoke_guest_id'] ?? null;

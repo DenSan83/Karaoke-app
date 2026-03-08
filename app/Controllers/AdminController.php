@@ -44,6 +44,8 @@ class AdminController {
              $guestCodes = [];
         }
 
+        $hotelCode = $settings->get('hotel_code');
+
         require_once 'views/admin_codes.php';
     }
 
@@ -87,6 +89,57 @@ class AdminController {
             echo json_encode(['success' => true, 'codes' => $codes]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Failed to save codes']);
+        }
+    }
+
+    public function generateDistantCode() {
+        if (!isset($_SESSION['user'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        $name = trim($data['name'] ?? '');
+        $email = trim($data['email'] ?? '');
+
+        if (empty($name) || empty($email)) {
+            echo json_encode(['success' => false, 'error' => 'Name and Email are required']);
+            exit;
+        }
+
+        require_once 'app/Services/EncryptionService.php';
+        $payload = [
+            'name' => $name,
+            'email' => $email,
+            'salt' => bin2hex(openssl_random_pseudo_bytes(4)),
+            'type' => 'distant',
+            'created_at' => time()
+        ];
+
+        $code = EncryptionService::encrypt($payload);
+        echo json_encode(['success' => true, 'code' => $code]);
+    }
+
+    public function generateHotelCode() {
+        if (!isset($_SESSION['user'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        header('Content-Type: application/json');
+        
+        // Generate random 6-digit number
+        $code = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings();
+        if ($settings->set('hotel_code', $code)) {
+            echo json_encode(['success' => true, 'code' => $code]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to save hotel code']);
         }
     }
 }
