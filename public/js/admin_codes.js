@@ -1,3 +1,5 @@
+let initialCodes = [];
+
 // Tab switching
 function openTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -20,18 +22,27 @@ function renderCodes() {
 
     if (window.currentCodes.length === 0) {
         list.innerHTML = '<li style="color: #666; text-align: center; padding: 10px;">No active codes</li>';
-        return;
+    } else {
+        window.currentCodes.forEach((code, index) => {
+            const li = document.createElement('li');
+            li.className = 'code-item';
+            li.innerHTML = `
+                <span class="code-display">${escapeHtml(code)}</span>
+                <button class="remove-btn" title="Remove Code" onclick="removeCode(${index})">🗑</button>
+            `;
+            list.appendChild(li);
+        });
     }
 
-    window.currentCodes.forEach((code, index) => {
-        const li = document.createElement('li');
-        li.className = 'code-item';
-        li.innerHTML = `
-            <span class="code-display">${escapeHtml(code)}</span>
-            <button class="remove-btn" title="Remove Code" onclick="removeCode(${index})">🗑</button>
-        `;
-        list.appendChild(li);
-    });
+    checkChanges();
+}
+
+function checkChanges() {
+    const saveBtn = document.getElementById('save-btn');
+    if (!saveBtn) return;
+
+    const hasChanges = JSON.stringify(window.currentCodes.sort()) !== JSON.stringify(initialCodes.sort());
+    saveBtn.disabled = !hasChanges;
 }
 
 function addCode() {
@@ -62,6 +73,9 @@ function escapeHtml(text) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Save initial state
+    initialCodes = [...window.currentCodes];
+
     // Event Listeners
     const addBtn = document.getElementById('add-code-btn');
     const newInput = document.getElementById('new-code');
@@ -97,10 +111,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     msg.textContent = 'Codes saved successfully!';
                     msg.className = 'msg success';
+
+                    // Update initial state after successful save
+                    initialCodes = [...window.currentCodes];
                 } else {
                     msg.textContent = data.error || 'Failed to save codes';
                     msg.className = 'msg error';
                 }
+
+                // Vanish after 5 seconds
+                setTimeout(() => {
+                    msg.textContent = '';
+                    msg.className = 'msg';
+                }, 5000);
             } catch (err) {
                 console.error(err);
                 msg.textContent = 'Network error occurred';
@@ -108,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save In-Person Codes';
+                checkChanges(); // Re-verify in case of failure or state update
             }
         });
     }
