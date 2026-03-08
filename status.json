@@ -1,9 +1,0 @@
-{
-    "command": "pause",
-    "payload": [],
-    "command_timestamp": 1772060407.455249,
-    "last_updated": 1772060409.095201,
-    "current_index": 0,
-    "state": "playing",
-    "state_timestamp": 1772060409.095021
-}

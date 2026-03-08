@@ -177,6 +177,12 @@
     border-radius: 50%;
     background: rgba(207, 102, 121, 0.1);
     transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    box-sizing: border-box;
 }
 
 .logout-icon:hover {

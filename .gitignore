@@ -29,3 +29,6 @@ Thumbs.db
 
 # Project-installed binaries
 /bin/
+
+# Data files
+*.json

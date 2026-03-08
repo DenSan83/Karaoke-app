@@ -14,7 +14,12 @@
                 <h1>Hi, <?php echo htmlspecialchars($guest['name']); ?>!</h1>
                 <p>What would you like to sing?</p>
             </div>
-            <a href="logout" class="logout-icon" title="Leave Party">⏻</a>
+            <a href="logout" class="logout-icon" title="Leave Party">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                    <line x1="12" y1="2" x2="12" y2="12"></line>
+                </svg>
+            </a>
         </header>
 
         <div id="notifications-area">
