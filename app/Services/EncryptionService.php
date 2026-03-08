@@ -23,6 +23,10 @@ class EncryptionService {
     public static function decrypt($code) {
         // Re-apply base64 padding
         $base64 = str_replace(['-', '_'], ['+', '/'], $code);
+        $rem = strlen($base64) % 4;
+        if ($rem) {
+            $base64 .= str_repeat('=', 4 - $rem);
+        }
         $data = base64_decode($base64);
         
         $iv_len = openssl_cipher_iv_length(self::$method);

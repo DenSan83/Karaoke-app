@@ -94,6 +94,7 @@ class WelcomeController {
         $distantName = null;
         $autoLogin = false;
         $isHotelJoin = false;
+        $isDistantInvite = false;
 
         if ($guestCodes !== null && is_array($guestCodes)) {
             // New system is active - strictly check against the list (case sensitive)
@@ -118,6 +119,8 @@ class WelcomeController {
             
             if ($decrypted && isset($decrypted['type']) && $decrypted['type'] === 'distant') {
                 $isValid = true;
+                $isDistantInvite = true;
+                $distantName = $decrypted['name'];
                 
                 // LOG THIS ACCESS
                 $logFile = 'distant_access.log';
@@ -146,7 +149,7 @@ class WelcomeController {
             
             // Check for persistent guest cookie
             $guestId = $_COOKIE['karaoke_guest_id'] ?? null;
-            if ($guestId && !$isHotelJoin) {
+            if ($guestId && !$isHotelJoin && !$isDistantInvite) {
                 $guest = $this->guestModel->getById($guestId);
                 if ($guest) {
                     // Auto-login if they have a valid cookie
