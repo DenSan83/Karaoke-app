@@ -61,4 +61,33 @@ class SystemLog {
 
         return $logs;
     }
+
+    /**
+     * Remove all logs associated with a specific guest ID
+     */
+    public function removeLogsByGuestId($guestId) {
+        if (!$guestId) return false;
+        
+        $allData = $this->getData();
+        $originalCount = count($allData['logs']);
+        
+        $allData['logs'] = array_filter($allData['logs'], function($l) use ($guestId) {
+            return ($l['data']['guestId'] ?? '') !== $guestId;
+        });
+        $allData['logs'] = array_values($allData['logs']);
+
+        if (count($allData['logs']) !== $originalCount) {
+            return $this->saveData($allData);
+        }
+        return true;
+    }
+
+    /**
+     * Batch update logs (used for backfill persistence)
+     */
+    public function updateLogs($logs) {
+        $allData = $this->getData();
+        $allData['logs'] = $logs;
+        return $this->saveData($allData);
+    }
 }

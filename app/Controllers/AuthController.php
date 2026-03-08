@@ -45,13 +45,26 @@ class AuthController {
     }
 
     public function logout() {
-        $wasGuest = isset($_SESSION['guest_id']);
-        session_destroy();
-        if ($wasGuest) {
-            header('Location: ./');
+        $guestId = $_SESSION['guest_id'] ?? null;
+        
+        if ($guestId) {
+            // 1. Remove from guests.json
+            require_once 'app/Models/Guest.php';
+            $guestModel = new Guest();
+            $guestModel->remove($guestId);
+
+            // 2. Remove activity logs
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog();
+            $sysLog->removeLogsByGuestId($guestId);
+            
+            $redirect = './';
         } else {
-            header('Location: login');
+            $redirect = 'login';
         }
+
+        session_destroy();
+        header('Location: ' . $redirect);
         exit;
     }
 }

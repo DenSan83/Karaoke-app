@@ -31,11 +31,13 @@ class AdminController {
         $allGuestsData = $guestModel->getAll();
         $allGuests = $allGuestsData['guests'] ?? [];
         $userLogs = $sysLog->getLogs('user_login');
+        $allLogs = $sysLog->getLogs(); // Get everything for update
         $updated = false;
 
         // 1. Resolve missing guestIds in existing logs
-        foreach ($userLogs as &$log) {
-            if (!isset($log['data']['guestId'])) {
+        // We iterate through all logs to ensure we update the source
+        foreach ($allLogs as &$log) {
+            if ($log['type'] === 'user_login' && !isset($log['data']['guestId'])) {
                 $name = $log['data']['name'] ?? '';
                 foreach ($allGuests as $g) {
                     if ($g['name'] === $name) {
@@ -45,6 +47,12 @@ class AdminController {
                     }
                 }
             }
+        }
+
+        if ($updated) {
+            $sysLog->updateLogs($allLogs);
+            // Refresh local userLogs after persistence
+            $userLogs = $sysLog->getLogs('user_login');
         }
 
         // 2. Ensure all current guests have a login log entry
@@ -57,18 +65,13 @@ class AdminController {
                 $entryData = [
                     'guestId' => $g['id'],
                     'name' => $g['name'],
-                    'code' => 'History',
+                    'code' => 'Active', // Changed from "History" to "Active"
                     'category' => 'in person',
                     'timestamp' => $g['created_at'] ?? time()
                 ];
                 $sysLog->log('user_login', $entryData);
                 $updated = true;
             }
-        }
-
-        // Fetch logs again if we updated anything to ensure we have the latest
-        if ($updated) {
-            $userLogs = $sysLog->getLogs('user_login');
         }
 
         // 3. Aggregate Tracks from Queue (playlist.json) and Guests (guests.json)
@@ -306,6 +309,11 @@ class AdminController {
         $guestModel = new Guest();
         
         if ($guestModel->remove($guestId)) {
+            // Also remove their activity logs
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog();
+            $sysLog->removeLogsByGuestId($guestId);
+
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Guest not found or could not be deleted']);
