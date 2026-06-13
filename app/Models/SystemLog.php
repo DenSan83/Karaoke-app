@@ -4,11 +4,16 @@ require_once 'app/Services/FileStorage.php';
 
 class SystemLog {
     private $file = 'activity_logs.json';
+    private $groupId;
 
-    public function __construct() {
+    public function __construct($groupId = null) {
+        if ($groupId) {
+            $this->file = 'activity_logs_' . $groupId . '.json';
+        }
         if (!file_exists($this->file)) {
             FileStorage::writeJson($this->file, ['logs' => []]);
         }
+        $this->groupId = $groupId;
     }
 
     private function getData() {

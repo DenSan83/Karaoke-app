@@ -9,7 +9,7 @@
 <body>
 
 <nav class="navbar">
-    <div class="logo">Karaoke Admin</div>
+    <div class="logo">Party Admin</div>
     <button id="hamburgerBtn" class="hamburger">
         <span></span>
         <span></span>

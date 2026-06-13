@@ -1,37 +1,37 @@
 <?php
 
 class AdminController {
-    public function index() {
+    private $groupId;
+    private $sysLog;
+    private $guestModel;
+    private $playlistModel;
+
+    public function __construct() {
         if (!isset($_SESSION['user'])) {
             header('Location: login');
             exit;
         }
+        $this->groupId = $_SESSION['group_id'] ?? null;
+    }
+
+    public function index() {
         require_once 'views/admin.php';
     }
 
     public function requests() {
-        if (!isset($_SESSION['user'])) {
-            header('Location: login');
-            exit;
-        }
         require_once 'views/admin_requests.php';
     }
 
     public function logs() {
-        if (!isset($_SESSION['user'])) {
-            header('Location: login');
-            exit;
-        }
-
         require_once 'app/Models/SystemLog.php';
         require_once 'app/Models/Guest.php';
-        $sysLog = new SystemLog();
-        $guestModel = new Guest();
+        $this->sysLog = new SystemLog($this->groupId);
+        $this->guestModel = new Guest($this->groupId);
         
-        $allGuestsData = $guestModel->getAll();
+        $allGuestsData = $this->guestModel->getAll();
         $allGuests = $allGuestsData['guests'] ?? [];
-        $userLogs = $sysLog->getLogs('user_login');
-        $allLogs = $sysLog->getLogs(); // Get everything for update
+        $userLogs = $this->sysLog->getLogs('user_login');
+        $allLogs = $this->sysLog->getLogs(); // Get everything for update
         $updated = false;
 
         // 1. Resolve missing guestIds in existing logs
@@ -50,9 +50,9 @@ class AdminController {
         }
 
         if ($updated) {
-            $sysLog->updateLogs($allLogs);
+            $this->sysLog->updateLogs($allLogs);
             // Refresh local userLogs after persistence
-            $userLogs = $sysLog->getLogs('user_login');
+            $userLogs = $this->sysLog->getLogs('user_login');
         }
 
         // 2. Ensure all current guests have a login log entry
@@ -69,7 +69,7 @@ class AdminController {
                     'category' => 'in person',
                     'timestamp' => $g['created_at'] ?? time()
                 ];
-                $sysLog->log('user_login', $entryData);
+                $this->sysLog->log('user_login', $entryData);
                 $updated = true;
             }
         }
@@ -80,8 +80,8 @@ class AdminController {
 
         // A. From Playlist (Active/Accepted songs)
         require_once 'app/Models/Playlist.php';
-        $playlistModel = new Playlist();
-        $playlistData = json_decode($playlistModel->getAll(), true) ?: [];
+        $this->playlistModel = new Playlist($this->groupId);
+        $playlistData = json_decode($this->playlistModel->getAll(), true) ?: [];
         
         // Helper to find category by name
         $findCategory = function($name) use ($allGuests, $userLogs) {
@@ -143,12 +143,8 @@ class AdminController {
     }
 
     public function codes() {
-        if (!isset($_SESSION['user'])) {
-            header('Location: ../login');
-            exit;
-        }
         require_once 'app/Models/Settings.php';
-        $settings = new Settings();
+        $settings = new Settings($this->groupId);
         
         // Migrate legacy single code or default if needed
         $legacyCode = $settings->get('guest_code');
@@ -176,12 +172,6 @@ class AdminController {
     }
 
     public function updateCode() {
-        if (!isset($_SESSION['user'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
-            exit;
-        }
-        
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         
@@ -202,7 +192,7 @@ class AdminController {
         $codes = array_values($codes); // Re-index
 
         require_once 'app/Models/Settings.php';
-        $settings = new Settings();
+        $settings = new Settings($this->groupId);
         
         if ($settings->update(function($current) use ($codes) {
             $current['guest_codes'] = $codes;
@@ -219,12 +209,6 @@ class AdminController {
     }
 
     public function generateDistantCode() {
-        if (!isset($_SESSION['user'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
-            exit;
-        }
-
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         $name = trim($data['name'] ?? '');
@@ -241,7 +225,8 @@ class AdminController {
             'email' => $email,
             'salt' => bin2hex(openssl_random_pseudo_bytes(4)),
             'type' => 'distant',
-            'created_at' => time()
+            'created_at' => time(),
+            'group_id' => $this->groupId
         ];
 
         $code = EncryptionService::encrypt($payload);
@@ -249,19 +234,13 @@ class AdminController {
     }
 
     public function generateHotelCode() {
-        if (!isset($_SESSION['user'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
-            exit;
-        }
-
         header('Content-Type: application/json');
         
         // Generate random 6-digit number
         $code = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
         
         require_once 'app/Models/Settings.php';
-        $settings = new Settings();
+        $settings = new Settings($this->groupId);
         if ($settings->set('hotel_code', $code)) {
             echo json_encode(['success' => true, 'code' => $code]);
         } else {
@@ -270,18 +249,12 @@ class AdminController {
     }
 
     public function toggleSession() {
-        if (!isset($_SESSION['user'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
-            exit;
-        }
-
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         $allow = (bool)($data['allow'] ?? true);
 
         require_once 'app/Models/Settings.php';
-        $settings = new Settings();
+        $settings = new Settings($this->groupId);
         if ($settings->set('allow_new_sessions', $allow)) {
             echo json_encode(['success' => true, 'allow' => $allow]);
         } else {
@@ -290,12 +263,6 @@ class AdminController {
     }
 
     public function deleteGuest() {
-        if (!isset($_SESSION['user'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
-            exit;
-        }
-
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         $guestId = $data['guestId'] ?? '';
@@ -306,12 +273,12 @@ class AdminController {
         }
 
         require_once 'app/Models/Guest.php';
-        $guestModel = new Guest();
+        $guestModel = new Guest($this->groupId);
         
         if ($guestModel->remove($guestId)) {
             // Also remove their activity logs
             require_once 'app/Models/SystemLog.php';
-            $sysLog = new SystemLog();
+            $sysLog = new SystemLog($this->groupId);
             $sysLog->removeLogsByGuestId($guestId);
 
             echo json_encode(['success' => true]);
@@ -321,18 +288,13 @@ class AdminController {
     }
 
     public function downloadTracksList() {
-        if (!isset($_SESSION['user'])) {
-            header('Location: login');
-            exit;
-        }
-
         require_once 'app/Models/Guest.php';
-        $guestModel = new Guest();
+        $guestModel = new Guest($this->groupId);
         $allGuestsData = $guestModel->getAll();
         $allGuests = $allGuestsData['guests'] ?? [];
 
         require_once 'app/Models/Playlist.php';
-        $playlistModel = new Playlist();
+        $playlistModel = new Playlist($this->groupId);
         $playlistData = json_decode($playlistModel->getAll(), true) ?: [];
 
         $lines = [];

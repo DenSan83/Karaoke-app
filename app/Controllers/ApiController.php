@@ -5,10 +5,18 @@ require_once 'app/Models/PlayerStatus.php';
 class ApiController {
     private $playlistModel;
     private $statusModel;
+    private $groupId;
 
     public function __construct() {
-        $this->playlistModel = new Playlist();
-        $this->statusModel = new PlayerStatus();
+        $this->groupId = $_SESSION['group_id'] ?? null;
+        
+        // If not in session (e.g. for player screen), try to get from header or query
+        if (!$this->groupId) {
+            $this->groupId = $_GET['group_id'] ?? ($_SERVER['HTTP_X_GROUP_ID'] ?? null);
+        }
+
+        $this->playlistModel = new Playlist($this->groupId);
+        $this->statusModel = new PlayerStatus($this->groupId);
     }
 
     private function checkAuth() {
@@ -42,7 +50,7 @@ class ApiController {
             // We search for the videoId in all guests
             if (isset($result['video']['id'])) {
                 require_once 'app/Models/Guest.php';
-                $guestModel = new Guest();
+                $guestModel = new Guest($this->groupId);
                 // Pass null as guestId to search all guests
                 $guestModel->updateSongStatus(null, $result['video']['id'], 'Accepted');
             }
@@ -228,7 +236,7 @@ class ApiController {
         header('Content-Type: application/json');
         
         require_once 'app/Models/Guest.php';
-        $guestModel = new Guest();
+        $guestModel = new Guest($this->groupId);
         $guests = $guestModel->getAll();
         
         $flattenedRequests = [];
@@ -311,7 +319,7 @@ class ApiController {
         }
 
         require_once 'app/Models/Guest.php';
-        $guestModel = new Guest();
+        $guestModel = new Guest($this->groupId);
         
         // If guestId is null, this will update status for ALL guests with this videoId
         // This is desired behavior for grouped requests.

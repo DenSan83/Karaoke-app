@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karaoke Player</title>
+    <title>Party Screen</title>
     <link rel="stylesheet" href="public/css/player.css">
 </head>
 <body>
@@ -39,6 +39,9 @@
     <button id="fullscreenBtn">Enter Fullscreen</button>
 </div>
 
+<script>
+    const GROUP_ID = <?= json_encode($groupId) ?>;
+</script>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script src="public/js/player.js"></script>
 

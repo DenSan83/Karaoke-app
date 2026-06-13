@@ -31,6 +31,22 @@ require_once 'app/Controllers/PlayerController.php';
 require_once 'app/Controllers/AdminController.php';
 require_once 'app/Controllers/ApiController.php';
 require_once 'app/Controllers/AuthController.php';
+require_once 'app/Controllers/SuperAdminController.php';
+
+// Check for group session validity
+if (isset($_SESSION['group_id']) && !isset($_SESSION['is_superadmin'])) {
+    require_once 'app/Models/Group.php';
+    $groupModel = new Group();
+    $group = $groupModel->getById($_SESSION['group_id']);
+    if (!$group || !$groupModel->isValid($group)) {
+        if ($group) {
+            $groupModel->resetPin($group['id']);
+        }
+        session_destroy();
+        header('Location: ' . $basePath . '/login');
+        exit;
+    }
+}
 
 // The original $route logic using $_GET['r'] is now replaced by the above logic
 // $route = $_GET['r'] ?? '/';
@@ -40,6 +56,14 @@ require_once 'app/Controllers/AuthController.php';
 // }
 
 // Simple router
+if (strpos($route, 'screen/') === 0) {
+    $parts = explode('/', $route);
+    $groupId = $parts[1] ?? null;
+    $controller = new PlayerController();
+    $controller->index($groupId);
+    exit;
+}
+
 switch ($route) {
     case '/':
     case '':
@@ -53,6 +77,26 @@ switch ($route) {
         $controller->index();
         break;
     
+    case 'superadmin':
+        $controller = new SuperAdminController();
+        $controller->index();
+        break;
+
+    case 'api/superadmin/create_group':
+        $controller = new SuperAdminController();
+        $controller->createGroup();
+        break;
+
+    case 'api/superadmin/delete_group':
+        $controller = new SuperAdminController();
+        $controller->deleteGroup();
+        break;
+
+    case 'api/superadmin/update_group':
+        $controller = new SuperAdminController();
+        $controller->updateGroup();
+        break;
+
     case 'admin':
         $controller = new AdminController();
         $controller->index();

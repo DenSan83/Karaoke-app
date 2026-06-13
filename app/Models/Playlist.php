@@ -3,13 +3,17 @@
 require_once 'app/Services/FileStorage.php';
 
 class Playlist {
-    private $file;
+    private $file = 'playlist.json';
+    private $groupId;
 
-    public function __construct() {
-        $this->file = __DIR__ . '/../../playlist.json';
+    public function __construct($groupId = null) {
+        if ($groupId) {
+            $this->file = 'playlist_' . $groupId . '.json';
+        }
         if (!file_exists($this->file)) {
             FileStorage::writeJson($this->file, []);
         }
+        $this->groupId = $groupId;
     }
 
     public function getAll() {

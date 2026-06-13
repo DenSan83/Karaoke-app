@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Requests Management - Karaoke Admin</title>
+    <title>Requests Management - Party Admin</title>
     <link rel="stylesheet" href="../public/css/admin.css">
     <link rel="stylesheet" href="../public/css/admin_requests.css">
 </head>
 <body>
 
 <nav class="navbar">
-    <div class="logo">Karaoke Admin</div>
+    <div class="logo">Party Admin</div>
     <div class="navbar-controls">
         <a href="../admin" class="nav-btn next nav-back-to-queue">Back to Queue</a>
     </div>

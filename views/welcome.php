@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome - Karaoke Party</title>
+    <title>Welcome - Party Time</title>
     <link rel="stylesheet" href="public/css/admin.css">
     <link rel="stylesheet" href="public/css/welcome.css">
 </head>
 <body>
     <div class="welcome-page">
         <div class="welcome-card">
-            <div class="welcome-logo">Karaoke Party</div>
+            <div class="welcome-logo">Party Time</div>
             <p class="welcome-subtitle">Join the queue and sing your heart out!</p>
 
             <!-- Step 1: Choice/Code -->

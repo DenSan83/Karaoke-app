@@ -4,11 +4,16 @@ require_once 'app/Services/FileStorage.php';
 
 class Guest {
     private $file = 'guests.json';
+    private $groupId;
 
-    public function __construct() {
+    public function __construct($groupId = null) {
+        if ($groupId) {
+            $this->file = 'guests_' . $groupId . '.json';
+        }
         if (!file_exists($this->file)) {
             FileStorage::writeJson($this->file, ['guests' => []]);
         }
+        $this->groupId = $groupId;
     }
 
     private function getData() {

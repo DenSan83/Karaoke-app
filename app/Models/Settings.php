@@ -5,11 +5,16 @@ require_once 'app/Services/FileStorage.php';
 class Settings {
     private $file = 'settings.json';
     private $data = [];
+    private $groupId;
 
-    public function __construct() {
+    public function __construct($groupId = null) {
+        if ($groupId) {
+            $this->file = 'settings_' . $groupId . '.json';
+        }
         if (!file_exists($this->file)) {
             FileStorage::writeJson($this->file, []);
         }
+        $this->groupId = $groupId;
         $this->data = FileStorage::readJson($this->file, []);
     }
 

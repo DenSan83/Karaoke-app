@@ -13,7 +13,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (data.success) {
-            window.location.href = 'admin';
+            window.location.href = data.redirect || 'admin';
         } else {
             messageDiv.textContent = data.message;
             messageDiv.className = 'error-msg';

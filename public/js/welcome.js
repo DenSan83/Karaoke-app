@@ -34,13 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (verifyBtn) {
         verifyBtn.addEventListener('click', async () => {
             const code = inviteInput.value.trim();
+            const urlParams = new URLSearchParams(window.location.search);
+            const groupId = urlParams.get('g');
             if (!code) return;
 
             try {
                 const res = await fetch('api/verify-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
+                    body: JSON.stringify({ code, group_id: groupId })
                 });
                 const data = await res.json();
 

@@ -3,9 +3,11 @@ require_once 'app/Models/Guest.php';
 
 class WelcomeController {
     private $guestModel;
+    private $groupId;
 
     public function __construct() {
-        $this->guestModel = new Guest();
+        $this->groupId = $_SESSION['group_id'] ?? null;
+        $this->guestModel = new Guest($this->groupId);
     }
 
     public function index() {
@@ -13,6 +15,7 @@ class WelcomeController {
             header('Location: guest-dashboard');
             exit;
         }
+        
         require_once 'views/welcome.php';
     }
 
@@ -95,9 +98,60 @@ class WelcomeController {
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         $code = trim($data['code'] ?? '');
+        $groupId = $data['group_id'] ?? null;
 
+        require_once 'app/Models/Group.php';
         require_once 'app/Models/Settings.php';
-        $settings = new Settings();
+        $groupModel = new Group();
+        
+        $targetGroup = null;
+
+        // 1. If groupId is provided in URL/request, verify it exists and is valid
+        if ($groupId) {
+            $group = $groupModel->getById($groupId);
+            if ($group && $groupModel->isValid($group)) {
+                $targetGroup = $group;
+            }
+        }
+
+        // 2. If no groupId or invalid, search all active groups for this code
+        if (!$targetGroup) {
+            $allGroups = $groupModel->getAll();
+            foreach ($allGroups as $group) {
+                if ($groupModel->isValid($group)) {
+                    $settings = new Settings($group['id']);
+                    $guestCodes = $settings->get('guest_codes', []);
+                    if (in_array($code, $guestCodes) || $code === $settings->get('hotel_code')) {
+                        $targetGroup = $group;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 3. If still no group, check for distant access (encrypted codes)
+        if (!$targetGroup && strlen($code) > 20) {
+            require_once 'app/Services/EncryptionService.php';
+            $decrypted = EncryptionService::decrypt($code);
+            if ($decrypted && isset($decrypted['group_id'])) {
+                $group = $groupModel->getById($decrypted['group_id']);
+                if ($group && $groupModel->isValid($group)) {
+                    $targetGroup = $group;
+                }
+            }
+        }
+
+        if (!$targetGroup) {
+            echo json_encode(['success' => false, 'error' => 'Invalid code or party is no longer active.']);
+            return;
+        }
+
+        // Update session group_id and re-instantiate guestModel
+        $_SESSION['group_id'] = $targetGroup['id'];
+        $this->groupId = $targetGroup['id'];
+        $this->guestModel = new Guest($this->groupId);
+
+        $settings = new Settings($this->groupId);
         
         // GLOBAL SESSION STATUS CHECK
         $allowNew = $settings->get('allow_new_sessions', true);

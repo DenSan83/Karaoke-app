@@ -6,49 +6,13 @@
     margin: 40px auto;
     border: 1px solid #333;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease;
+    box-sizing: border-box;
 }
 
 /* Adjust main container for fixed header */
 .admin-container {
     padding-top: 80px;
-}
-
-/* Tabs */
-.tabs {
-    display: flex;
-    border-bottom: 2px solid #333;
-    margin-bottom: 25px;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 10px 20px;
-    color: #888;
-    font-size: 1rem;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    transition: all 0.2s;
-}
-
-.tab-btn:hover {
-    color: #ccc;
-}
-
-.tab-btn.active {
-    color: var(--secondary-color);
-    border-bottom-color: var(--secondary-color);
-    font-weight: bold;
-}
-
-.tab-content {
-    display: none;
-    animation: fadeIn 0.3s ease;
-}
-
-.tab-content.active {
-    display: block;
 }
 
 @keyframes fadeIn {
@@ -210,6 +174,7 @@
     margin-bottom: 30px;
     border: 1px solid #333;
     text-align: center;
+    box-sizing: border-box;
 }
 
 .qrcode-wrapper {
@@ -222,16 +187,23 @@
     justify-content: center;
     align-items: center;
     margin: 0 auto;
+    box-sizing: border-box;
+    width: fit-content;
+    min-width: 100px;
+    min-height: 100px;
 }
 
 .qrcode-wrapper img {
     display: block;
     margin: 0 auto;
     max-width: 100%;
+    height: auto !important;
 }
 
 .qrcode-wrapper canvas {
     display: none;
+    max-width: 100%;
+    height: auto !important;
 }
 
 .qrcode-hint {
@@ -320,4 +292,35 @@ input:checked+.slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .codes-card {
+        padding: 20px 15px;
+        margin: 20px 10px;
+    }
+
+    .qrcode-section {
+        padding: 20px 10px;
+    }
+
+    .qrcode-wrapper {
+        padding: 10px;
+    }
+    
+    .qrcode-wrapper img, 
+    .qrcode-wrapper canvas {
+        width: 180px !important;
+        height: 180px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-width: 180px;
+        min-height: 180px;
+    }
+
+    .session-master-toggle {
+        padding: 15px 20px;
+        margin: 10px;
+    }
 }
