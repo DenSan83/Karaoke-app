@@ -120,7 +120,7 @@ function checkChanges() {
     const saveBtn = document.getElementById('save-btn');
     if (!saveBtn) return;
 
-    const hasChanges = JSON.stringify(window.currentCodes.sort()) !== JSON.stringify(initialCodes.sort());
+    const hasChanges = JSON.stringify([...window.currentCodes].sort()) !== JSON.stringify([...initialCodes].sort());
     saveBtn.disabled = !hasChanges;
 }
 

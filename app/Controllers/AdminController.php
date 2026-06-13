@@ -196,10 +196,9 @@ class AdminController {
         
         if ($settings->update(function($current) use ($codes) {
             $current['guest_codes'] = $codes;
-            // Remove legacy field
+            // Remove legacy fields
             unset($current['guest_code']);
-            // Add category
-            $current['category'] = 'in person';
+            unset($current['category']);
             return $current;
         })) {
             echo json_encode(['success' => true, 'codes' => $codes]);
