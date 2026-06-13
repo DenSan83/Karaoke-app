@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Activity Logs</title>
-    <link rel="stylesheet" href="../public/css/admin.css">
-    <link rel="stylesheet" href="../public/css/admin_logs.css">
+    <base href="<?= htmlspecialchars($basePath) ?>/">
+    <link rel="stylesheet" href="public/css/admin.css">
+    <link rel="stylesheet" href="public/css/admin_logs.css">
 </head>
 <body>
     <div class="admin-container">
         <header class="admin-header">
             <div class="header-content">
-                <a href="../admin" class="back-link">← Back to Dashboard</a>
+                <a href="admin" class="back-link">← Back to Dashboard</a>
                 <h1>Activity Logs</h1>
             </div>
         </header>

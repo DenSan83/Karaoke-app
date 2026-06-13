@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Requests - Karaoke Party</title>
+    <base href="<?= htmlspecialchars($basePath) ?>/">
     <link rel="stylesheet" href="public/css/admin.css">
     <link rel="stylesheet" href="public/css/guest_dashboard.css">
 </head>
@@ -133,6 +134,7 @@
     </div>
 
     <script>
+        const BASE_PATH = <?= json_encode($this->basePath ?? '') ?>;
         // Define global variables for the external script
         window.guestSongs = <?php echo json_encode($guest['songs']); ?>;
         window.activeNotifications = <?php echo json_encode($guest['notifications'] ?? []); ?>;

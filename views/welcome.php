@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome - Party Time</title>
+    <base href="<?= htmlspecialchars($basePath) ?>/">
     <link rel="stylesheet" href="public/css/admin.css">
     <link rel="stylesheet" href="public/css/welcome.css">
 </head>
@@ -64,6 +65,9 @@
         </div>
     </div>
 
+    <script>
+        const BASE_PATH = <?= json_encode($this->basePath ?? '') ?>;
+    </script>
     <script src="public/js/welcome.js"></script>
 </body>
 </html>

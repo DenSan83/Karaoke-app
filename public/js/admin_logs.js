@@ -22,7 +22,7 @@ async function deleteUser(guestId, name) {
     }
 
     try {
-        const response = await fetch('../api/delete_guest', {
+        const response = await fetch('api/delete_guest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ guestId })

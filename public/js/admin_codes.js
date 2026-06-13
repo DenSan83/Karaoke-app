@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionToggle.disabled = true;
 
             try {
-                const res = await fetch('../api/toggle_session', {
+                const res = await fetch('api/toggle_session', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ allow: isAllowed })

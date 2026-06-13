@@ -76,7 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (restartBtn) restartBtn.addEventListener('click', () => sendCommand('restart'));
 
     function sendCommand(command, payload = {}) {
-        fetch('api/send_command', {
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/send_command';
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ command: command, payload: payload })
@@ -234,7 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fetchPlaylist() {
-        fetch('api/get_playlist')
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/get_playlist';
+        fetch(apiUrl)
             .then(response => response.json())
             .then(data => {
                 localStorage.setItem('currentPlaylist', JSON.stringify(data));
@@ -246,7 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function removeVideo(index) {
         if (!confirm('Remove this video?')) return;
 
-        fetch('api/remove_video', {
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/remove_video';
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ index: index })
@@ -285,7 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userNameInput) userNameInput.value = '';
         showMessage('Adding to queue...', 'success');
 
-        fetch('api/add_video', {
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/add_video';
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: url, user: user })
@@ -333,7 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const playlist = JSON.parse(localStorage.getItem('currentPlaylist') || '[]');
         playlist.forEach(video => {
             if (video.downloading) {
-                fetch(`api/download_progress?id=${video.id}`)
+                const progressApiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + `api/download_progress?id=${video.id}`;
+                fetch(progressApiUrl)
                     .then(res => res.json())
                     .then(data => {
                         const progressContainer = document.getElementById(`progress-${video.id}`);
@@ -373,7 +378,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Player status polling for highlighting
     setInterval(async () => {
         try {
-            const res = await fetch('api/get_status');
+            const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/get_status';
+            const res = await fetch(apiUrl);
             const status = await res.json();
             if (status.current_index !== undefined) {
                 currentActiveIndex = parseInt(status.current_index);
@@ -462,7 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function savePlaylistOrder() {
         const currentPlaylist = JSON.parse(localStorage.getItem('currentPlaylist') || '[]');
-        fetch('api/reorder_playlist', {
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/reorder_playlist';
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ playlist: currentPlaylist })

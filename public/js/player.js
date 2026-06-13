@@ -8,7 +8,8 @@ let isPlayerReady = false;
 // Helper to report status to backend/admin
 function reportStatus(state) {
     if (currentVideoIndex >= 0) {
-        fetch('api/update_status' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : ''), {
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/update_status' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : '');
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ index: currentVideoIndex, state: state })
@@ -79,7 +80,8 @@ function onPlayerError(event) {
 
 async function resolveStream(videoId) {
     try {
-        const response = await fetch('api/resolve_stream' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : ''), {
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/resolve_stream' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : '');
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ videoId: videoId })
@@ -143,7 +145,8 @@ let isWaitingForMore = false;
 
 async function pollPlaylist() {
     try {
-        const response = await fetch('api/get_playlist' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : ''), { cache: 'no-store' });
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/get_playlist' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : '');
+        const response = await fetch(apiUrl, { cache: 'no-store' });
         const newPlaylist = await response.json();
 
         // Always update playlist to handle removals/reordering
@@ -304,7 +307,8 @@ let isFirstStatusPoll = true;
 
 async function pollStatus() {
     try {
-        const response = await fetch('api/get_status' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : ''), { cache: 'no-store' });
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/get_status' + (typeof GROUP_ID !== 'undefined' ? '?group_id=' + GROUP_ID : '');
+        const response = await fetch(apiUrl, { cache: 'no-store' });
         const data = await response.json();
 
         // Handle first poll:

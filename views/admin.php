@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaoke Admin</title>
+    <base href="<?= htmlspecialchars($basePath) ?>/">
     <link rel="stylesheet" href="public/css/admin.css">
 </head>
 <body>
@@ -81,6 +82,9 @@
     </div>
 </div>
 
+<script>
+    const BASE_PATH = <?= json_encode($this->basePath ?? '') ?>;
+</script>
 <script src="public/js/admin.js"></script>
 
 </body>

@@ -4,8 +4,10 @@ require_once 'app/Models/Guest.php';
 class WelcomeController {
     private $guestModel;
     private $groupId;
+    private $basePath;
 
-    public function __construct() {
+    public function __construct($basePath = '') {
+        $this->basePath = $basePath;
         $this->groupId = $_SESSION['group_id'] ?? null;
         $this->guestModel = new Guest($this->groupId);
     }
@@ -15,7 +17,10 @@ class WelcomeController {
             header('Location: guest-dashboard');
             exit;
         }
-        
+        $data = [
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'views/welcome.php';
     }
 
@@ -91,6 +96,12 @@ class WelcomeController {
             return "Done";
         };
 
+        $data = [
+            'guest' => $guest,
+            'calculateStatus' => $calculateStatus,
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'views/guest_dashboard.php';
     }
 

@@ -79,16 +79,25 @@ if (isset($_SESSION['group_id']) && !isset($_SESSION['is_superadmin'])) {
 if (strpos($route, 'screen/') === 0) {
     $parts = explode('/', $route);
     $groupId = $parts[1] ?? null;
-    $controller = new PlayerController();
-    $controller->index($groupId);
-    exit;
+
+    // Sanitize group ID to avoid issues with following paths
+    if ($groupId && strpos($groupId, '?') !== false) {
+        $groupId = explode('?', $groupId)[0];
+    }
+
+    // If it's an API call or public file, don't treat it as a screen route
+    if ($groupId !== 'api' && $groupId !== 'public') {
+        $controller = new PlayerController();
+        $controller->index($groupId, $basePath);
+        exit;
+    }
 }
 
 switch ($route) {
     case '/':
     case '':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->index();
         break;
 
@@ -118,52 +127,52 @@ switch ($route) {
         break;
 
     case 'admin':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->index();
         break;
 
     case 'admin/codes':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->codes();
         break;
 
     case 'api/update_code':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->updateCode();
         break;
 
     case 'api/generate_distant_code':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->generateDistantCode();
         break;
 
     case 'api/generate_hotel_code':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->generateHotelCode();
         break;
 
     case 'api/toggle_session':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->toggleSession();
         break;
 
     case 'api/delete_guest':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->deleteGuest();
         break;
 
     case 'admin/requests':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->requests();
         break;
 
     case 'admin/logs':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->logs();
         break;
 
     case 'admin/logs/download_tracks':
-        $controller = new AdminController();
+        $controller = new AdminController($basePath);
         $controller->downloadTracksList();
         break;
 
@@ -232,7 +241,7 @@ switch ($route) {
 
     case 'guest-dashboard':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->dashboard();
         break;
 
@@ -256,49 +265,49 @@ switch ($route) {
 
     case 'api/verify-code':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->verifyCode();
         break;
 
     case 'api/add-guest':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->addGuest();
         break;
 
     case 'api/guest_reorder':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->reorderSongs();
         break;
 
     case 'api/guest_add_song':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->guestAddSong();
         break;
 
     case 'api/guest_join':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->joinSinger();
         break;
 
     case 'api/guest_remove_song':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->removeGuestSong();
         break;
 
     case 'api/guest_dismiss_notification':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->dismissNotification();
         break;
 
     case 'api/guest_notifications':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->getNotifications();
         break;
 
@@ -314,7 +323,7 @@ switch ($route) {
 
     case 'api/search_songs':
         require_once 'app/Controllers/WelcomeController.php';
-        $controller = new WelcomeController();
+        $controller = new WelcomeController($basePath);
         $controller->searchSongs();
         break;
 

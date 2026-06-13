@@ -5,8 +5,10 @@ class AdminController {
     private $sysLog;
     private $guestModel;
     private $playlistModel;
+    private $basePath;
 
-    public function __construct() {
+    public function __construct($basePath = '') {
+        $this->basePath = $basePath;
         if (!isset($_SESSION['user'])) {
             header('Location: login');
             exit;
@@ -15,14 +17,26 @@ class AdminController {
     }
 
     public function index() {
+        $data = [
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'views/admin.php';
     }
 
     public function requests() {
+        $data = [
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'views/admin_requests.php';
     }
 
     public function logs() {
+        $data = [
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'app/Models/SystemLog.php';
         require_once 'app/Models/Guest.php';
         $this->sysLog = new SystemLog($this->groupId);
@@ -139,10 +153,20 @@ class AdminController {
             return $tsB - $tsA;
         });
 
+        $data = [
+            'allGuests' => $allGuests,
+            'userLogs' => $userLogs,
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'views/admin_logs.php';
     }
 
     public function codes() {
+        $data = [
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'app/Models/Settings.php';
         $settings = new Settings($this->groupId);
         
@@ -168,6 +192,12 @@ class AdminController {
         $hotelCode = $settings->get('hotel_code');
         $allowNewSessions = $settings->get('allow_new_sessions', true);
 
+        $data = [
+            'guestCodes' => $guestCodes,
+            'allowNewSessions' => $allowNewSessions,
+            'basePath' => $this->basePath ?: './'
+        ];
+        extract($data);
         require_once 'views/admin_codes.php';
     }
 

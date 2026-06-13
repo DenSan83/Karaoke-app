@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function fetchRequests() {
         console.log('Fetching requests...');
-        fetch('../api/get_requests')
+        fetch('api/get_requests')
             .then(response => response.json())
             .then(data => {
                 renderRequests(data);
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function acceptRequest(item) {
         if (confirm(`Accept "${item.video.title}" from ${item.guest_name}?`)) {
-            fetch('../api/add_video', {
+            fetch('api/add_video', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function confirmRefuse(item) {
         if (confirm(`Are you sure you want to REFUSE "${item.video.title}" from ${item.guest_name}?`)) {
-            fetch('../api/refuse_request', {
+            fetch('api/refuse_request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

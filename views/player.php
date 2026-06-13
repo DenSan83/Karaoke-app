@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Party Screen</title>
+    <base href="<?= htmlspecialchars($basePath) ?>/">
     <link rel="stylesheet" href="public/css/player.css">
 </head>
 <body>
@@ -40,6 +41,7 @@
 </div>
 
 <script>
+    const BASE_PATH = <?= json_encode($basePath) ?>;
     const GROUP_ID = <?= json_encode($groupId) ?>;
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>

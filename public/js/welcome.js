@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!code) return;
 
             try {
-                const res = await fetch('api/verify-code', {
+                const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/verify-code';
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code, group_id: groupId })
@@ -72,7 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!name) return;
 
             try {
-                const res = await fetch('api/add-guest', {
+                const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/add-guest';
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name })
