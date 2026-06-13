@@ -1,92 +1,68 @@
 <?php
 
-require_once 'app/Services/FileStorage.php';
+require_once 'app/Services/Database.php';
 
 class Group {
-    private $file = 'groups.json';
+    private $db;
 
     public function __construct() {
-        if (!file_exists($this->file)) {
-            FileStorage::writeJson($this->file, []);
-        }
+        $this->db = Database::getInstance();
     }
 
     public function getAll() {
-        return FileStorage::readJson($this->file, []);
+        return $this->db->fetchAll("SELECT * FROM `groups` ");
     }
 
     public function getById($id) {
-        $groups = $this->getAll();
-        foreach ($groups as $group) {
-            if ($group['id'] === $id) {
-                return $group;
-            }
-        }
-        return null;
+        return $this->db->fetch("SELECT * FROM `groups` WHERE id = ?", [$id]);
     }
 
     public function getByAdminUsername($username) {
-        $groups = $this->getAll();
-        foreach ($groups as $group) {
-            if ($group['admin_username'] === $username) {
-                return $group;
-            }
-        }
-        return null;
+        return $this->db->fetch("SELECT * FROM `groups` WHERE admin_username = ?", [$username]);
     }
 
     public function create($name, $admin_username, $duration_type, $valid_from = null, $valid_to = null) {
-        $newGroup = null;
-        $success = FileStorage::atomicUpdate($this->file, function($groups) use ($name, $admin_username, $duration_type, $valid_from, $valid_to, &$newGroup) {
-            $id = $this->generateUniqueId($groups, 4);
-            $pin = $this->generateUniquePin($groups, 6);
-            
-            $newGroup = [
+        $groups = $this->getAll();
+        $id = $this->generateUniqueId($groups, 4);
+        $pin = $this->generateUniquePin($groups, 6);
+        
+        $sql = "INSERT INTO `groups` (id, name, admin_username, admin_pin, duration_type, valid_from, valid_to, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $createdAt = time();
+        $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $duration_type, $valid_from, $valid_to, $createdAt]);
+        
+        if ($success) {
+            return [
                 'id' => $id,
                 'name' => $name,
                 'admin_username' => $admin_username,
                 'admin_pin' => $pin,
-                'duration_type' => $duration_type, // 'unlimited' or 'limited'
+                'duration_type' => $duration_type,
                 'valid_from' => $valid_from,
                 'valid_to' => $valid_to,
-                'created_at' => time()
+                'created_at' => $createdAt
             ];
-            $groups[] = $newGroup;
-            return $groups;
-        });
-        return $success ? $newGroup : false;
+        }
+        return false;
     }
 
     public function update($id, $data) {
-        return FileStorage::atomicUpdate($this->file, function($groups) use ($id, $data) {
-            foreach ($groups as &$group) {
-                if ($group['id'] === $id) {
-                    // Check if we are changing the ID to something that already exists
-                    if (isset($data['id']) && $data['id'] !== $id) {
-                        foreach ($groups as $otherGroup) {
-                            if ($otherGroup['id'] === $data['id']) {
-                                // ID already exists, don't update this group's ID
-                                // or we could return an error here, but atomicUpdate expects return of the data
-                                // For now, let's just NOT update if it's a duplicate ID
-                                unset($data['id']);
-                                break;
-                            }
-                        }
-                    }
-                    $group = array_merge($group, $data);
-                    break;
-                }
-            }
-            return $groups;
-        });
+        $fields = [];
+        $params = [];
+        foreach ($data as $key => $value) {
+            if ($key === 'id') continue; // Don't update ID via this method for simplicity
+            $fields[] = "$key = ?";
+            $params[] = $value;
+        }
+        if (empty($fields)) return true;
+        
+        $params[] = $id;
+        $sql = "UPDATE `groups` SET " . implode(', ', $fields) . " WHERE id = ?";
+        return $this->db->query($sql, $params);
     }
 
     public function delete($id) {
-        return FileStorage::atomicUpdate($this->file, function($groups) use ($id) {
-            return array_filter($groups, function($group) use ($id) {
-                return $group['id'] !== $id;
-            });
-        });
+        return $this->db->query("DELETE FROM `groups` WHERE id = ?", [$id]);
     }
 
     private function generateUniqueId($groups, $length) {
@@ -134,14 +110,7 @@ class Group {
     }
     
     public function resetPin($id) {
-        return FileStorage::atomicUpdate($this->file, function($groups) use ($id) {
-            foreach ($groups as &$group) {
-                if ($group['id'] === $id) {
-                    $group['admin_pin'] = $this->generateUniquePin($groups, 6);
-                    break;
-                }
-            }
-            return $groups;
-        });
+        $pin = $this->generateUniquePin($this->getAll(), 6);
+        return $this->update($id, ['admin_pin' => $pin]);
     }
 }

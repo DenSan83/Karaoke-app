@@ -6,6 +6,7 @@ session_start();
 
 // Check system requirements (skip for installing page)
 require_once 'app/Services/SystemCheck.php';
+require_once 'app/Services/Database.php';
 
 // Auto-detect base path from script location
 $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /git_projects/08.karaoke_admin/index.php or /index.php
@@ -18,6 +19,25 @@ if ($basePath === '/' || $basePath === '\\') {
 $request = $_SERVER['REQUEST_URI'];
 $route = str_replace($basePath, '', parse_url($request, PHP_URL_PATH));
 $route = trim($route, '/');
+
+if ($route !== 'installing' && strpos($route, 'api/install') !== 0) {
+    if (!SystemCheck::checkDatabase()) {
+        if (isset($_GET['migration_attempted'])) {
+            die("La migration a été tentée mais la base de données n'est toujours pas prête. Veuillez vérifier votre configuration .env et vos logs d'erreur.");
+        }
+        try {
+            $GLOBALS['RUN_MIGRATION'] = true;
+            require_once 'migrate_json_to_mysql.php';
+            // After migration, we should ideally refresh or continue carefully.
+            // To be safe and avoid any issues with loaded classes, we can redirect to the same page.
+            $separator = (strpos($_SERVER['REQUEST_URI'], '?') === false) ? '?' : '&';
+            header('Location: ' . $_SERVER['REQUEST_URI'] . $separator . 'migration_attempted=1');
+            exit;
+        } catch (Exception $e) {
+            // Fallback or log error
+        }
+    }
+}
 
 // Check if yt-dlp is available (skip check for installing routes and API)
 if (!SystemCheck::checkYtDlp() &&

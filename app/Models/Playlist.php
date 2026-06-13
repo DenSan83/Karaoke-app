@@ -1,24 +1,30 @@
 <?php
 
-require_once 'app/Services/FileStorage.php';
+require_once 'app/Services/Database.php';
 
 class Playlist {
-    private $file = 'playlist.json';
+    private $db;
     private $groupId;
 
     public function __construct($groupId = null) {
-        if ($groupId) {
-            $this->file = 'playlist_' . $groupId . '.json';
-        }
-        if (!file_exists($this->file)) {
-            FileStorage::writeJson($this->file, []);
-        }
-        $this->groupId = $groupId;
+        $this->db = Database::getInstance();
+        $this->groupId = $groupId ?: 'default';
     }
 
     public function getAll() {
-        $data = FileStorage::readJson($this->file, []);
-        return json_encode($data);
+        $rows = $this->db->fetchAll("SELECT * FROM `playlist` WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
+        // Format to match old JSON structure (map video_id to id)
+        $playlist = array_map(function($row) {
+            return [
+                'id' => $row['video_id'],
+                'title' => $row['title'],
+                'user' => $row['user'],
+                'added_at' => (int)$row['added_at'],
+                'downloading' => (bool)$row['downloading'],
+                'local_path' => $row['local_path']
+            ];
+        }, $rows);
+        return json_encode($playlist);
     }
 
     public function add($url, $user) {
@@ -48,27 +54,28 @@ class Playlist {
         $title = $metadata['title'] ?? 'Unknown Title';
         $needsDownload = !$metadata['oembed_success'];
         
-        $newVideo = [
-            'id' => $videoId,
-            'title' => $title,
-            'user' => $user,
-            'added_at' => time()
-        ];
-
-        // If video needs download (restricted/unavailable via oEmbed), mark as downloading
-        if ($needsDownload) {
-            $newVideo['downloading'] = true;
-        }
-        
-        // Atomic add to playlist
-        $success = FileStorage::atomicUpdate($this->file, function($playlist) use ($newVideo) {
-            $playlist[] = $newVideo;
-            return $playlist;
-        }, []);
+        $sql = "INSERT INTO `playlist` (group_id, video_id, title, user, added_at, downloading, sort_order) 
+                SELECT ?, ?, ?, ?, ?, ?, COALESCE(MAX(sort_order), 0) + 1 FROM `playlist` WHERE group_id = ?";
+        $addedAt = time();
+        $success = $this->db->query($sql, [
+            $this->groupId,
+            $videoId,
+            $title,
+            $user,
+            $addedAt,
+            $needsDownload ? 1 : 0,
+            $this->groupId
+        ]);
         
         if ($success) {
-            // Spawn background download if needed
+            $newVideo = [
+                'id' => $videoId,
+                'title' => $title,
+                'user' => $user,
+                'added_at' => $addedAt
+            ];
             if ($needsDownload) {
+                $newVideo['downloading'] = true;
                 $this->spawnBackgroundDownload($videoId);
             }
             
@@ -94,8 +101,12 @@ class Playlist {
         $total = $result['total'];
         $addedVideos = [];
 
+        // Get current max sort_order
+        $row = $this->db->fetch("SELECT MAX(sort_order) as max_order FROM `playlist` WHERE group_id = ?", [$this->groupId]);
+        $currentMaxOrder = $row ? (int)$row['max_order'] : -1;
+
         // Add each video from the playlist
-        foreach ($videos as $videoData) {
+        foreach ($videos as $index => $videoData) {
             $newVideo = [
                 'id' => $videoData['id'],
                 'title' => $videoData['title'],
@@ -103,25 +114,26 @@ class Playlist {
                 'added_at' => time()
             ];
             
+            $sql = "INSERT INTO `playlist` (group_id, video_id, title, user, added_at, sort_order) VALUES (?, ?, ?, ?, ?, ?)";
+            $this->db->query($sql, [
+                $this->groupId,
+                $newVideo['id'],
+                $newVideo['title'],
+                $newVideo['user'],
+                $newVideo['added_at'],
+                $currentMaxOrder + $index + 1
+            ]);
+
             $addedVideos[] = $newVideo;
         }
 
-        // Atomic batch add
-        $success = FileStorage::atomicUpdate($this->file, function($playlist) use ($addedVideos) {
-            return array_merge($playlist, $addedVideos);
-        }, []);
-
-        if ($success) {
-            return [
-                'success' => true,
-                'is_playlist' => true,
-                'videos' => $addedVideos,
-                'total_in_playlist' => $total,
-                'added_count' => count($addedVideos)
-            ];
-        } else {
-            return ['error' => 'Failed to save playlist'];
-        }
+        return [
+            'success' => true,
+            'is_playlist' => true,
+            'videos' => $addedVideos,
+            'total_in_playlist' => $total,
+            'added_count' => count($addedVideos)
+        ];
     }
 
     private function spawnBackgroundDownload($videoId) {
@@ -186,53 +198,44 @@ class Playlist {
 
 
     public function remove($index) {
-        $success = FileStorage::atomicUpdate($this->file, function($playlist) use ($index) {
-            if (!isset($playlist[$index])) {
-                return $playlist; // No change
-            }
-            
-            $itemToRemove = $playlist[$index];
-            
-            // Check if local file exists
-            if (isset($itemToRemove['local_file'])) {
-                $filePath = __DIR__ . '/../../' . $itemToRemove['local_file'];
-                
-                // Count how many times this file is used in the playlist
-                $usageCount = 0;
-                foreach ($playlist as $item) {
-                    if (isset($item['local_file']) && $item['local_file'] === $itemToRemove['local_file']) {
-                        $usageCount++;
-                    }
-                }
-
-                // Only delete the physical file if this is the LAST reference to it
-                if ($usageCount <= 1 && file_exists($filePath)) {
-                    unlink($filePath);
-                }
-            }
-            
-            array_splice($playlist, $index, 1);
-            return $playlist;
-        }, []);
-        
-        if ($success) {
-            return ['success' => true];
-        } else {
-            return ['error' => 'Failed to save playlist'];
+        $playlist = json_decode($this->getAll(), true);
+        if (!isset($playlist[$index])) {
+            return ['error' => 'Invalid index'];
         }
+        
+        $itemToRemove = $playlist[$index];
+        $videoId = $itemToRemove['id'];
+        
+        // Check if local file exists
+        if (isset($itemToRemove['local_file'])) {
+            $filePath = __DIR__ . '/../../' . $itemToRemove['local_file'];
+            
+            // Count how many times this file is used in the database
+            $row = $this->db->fetch("SELECT COUNT(*) as usage_count FROM `playlist` WHERE local_path = ?", [$itemToRemove['local_file']]);
+            $usageCount = $row ? (int)$row['usage_count'] : 0;
+
+            // Only delete the physical file if this is the LAST reference to it
+            if ($usageCount <= 1 && file_exists($filePath)) {
+                @unlink($filePath);
+            }
+        }
+        
+        // Delete from database using group_id and video_id and sort_order to be precise
+        // Since we want to remove EXACTLY the one at $index
+        $rows = $this->db->fetchAll("SELECT id FROM `playlist` WHERE group_id = ? ORDER BY sort_order ASC LIMIT ?, 1", [$this->groupId, $index]);
+        if ($rows) {
+            $dbId = $rows[0]['id'];
+            $this->db->query("DELETE FROM `playlist` WHERE id = ?", [$dbId]);
+            // Re-normalize sort_order to avoid gaps (optional but good)
+            $this->db->query("SET @rank = -1; UPDATE `playlist` SET sort_order = (@rank := @rank + 1) WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
+        }
+        
+        return ['success' => true];
     }
 
     public function markDownloadComplete($videoId, $localPath) {
-        $success = FileStorage::atomicUpdate($this->file, function($playlist) use ($videoId, $localPath) {
-            foreach ($playlist as &$video) {
-                if ($video['id'] === $videoId) {
-                    unset($video['downloading']);
-                    $video['local_file'] = $localPath;
-                    break;
-                }
-            }
-            return $playlist;
-        }, []);
+        $sql = "UPDATE `playlist` SET downloading = 0, local_path = ? WHERE group_id = ? AND video_id = ?";
+        $success = $this->db->query($sql, [$localPath, $this->groupId, $videoId]);
         
         if ($success) {
             return ['success' => true];
@@ -246,10 +249,24 @@ class Playlist {
             return ['error' => 'Invalid data format'];
         }
 
-        if (FileStorage::writeJson($this->file, $newPlaylist)) {
+        $this->db->beginTransaction();
+        try {
+            // Simplest way: clear and re-insert or update all.
+            // But $newPlaylist contains the full objects.
+            // Let's just update sort_order for each video_id in the given order.
+            // NOTE: This assumes video_ids are unique in the playlist for that group.
+            // If there are duplicates, this might be problematic. 
+            // Better to use the database IDs if we had them.
+            
+            foreach ($newPlaylist as $index => $item) {
+                $videoId = $item['id'];
+                $this->db->query("UPDATE `playlist` SET sort_order = ? WHERE group_id = ? AND video_id = ? LIMIT 1", [$index, $this->groupId, $videoId]);
+            }
+            $this->db->commit();
             return ['success' => true];
-        } else {
-            return ['error' => 'Failed to save playlist'];
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return ['error' => 'Failed to save playlist: ' . $e->getMessage()];
         }
     }
 

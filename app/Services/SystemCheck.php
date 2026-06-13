@@ -31,6 +31,24 @@ class SystemCheck {
     }
 
     /**
+     * Check if database is initialized
+     */
+    public static function checkDatabase() {
+        try {
+            require_once __DIR__ . '/Database.php';
+            $db = Database::getInstance();
+            $pdo = $db->getConnection();
+            $stmt = $pdo->query("SHOW TABLES LIKE 'groups'");
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // Handle table not found specifically if needed, but SHOW TABLES LIKE shouldn't throw it
+            return false;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * Get the correct yt-dlp path based on what's available
      */
     public static function getYtDlpPath() {

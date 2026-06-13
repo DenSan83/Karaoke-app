@@ -1,27 +1,14 @@
 <?php
 
-require_once 'app/Services/FileStorage.php';
+require_once 'app/Services/Database.php';
 
 class SystemLog {
-    private $file = 'activity_logs.json';
+    private $db;
     private $groupId;
 
     public function __construct($groupId = null) {
-        if ($groupId) {
-            $this->file = 'activity_logs_' . $groupId . '.json';
-        }
-        if (!file_exists($this->file)) {
-            FileStorage::writeJson($this->file, ['logs' => []]);
-        }
-        $this->groupId = $groupId;
-    }
-
-    private function getData() {
-        return FileStorage::readJson($this->file, ['logs' => []]);
-    }
-
-    private function saveData($data) {
-        return FileStorage::writeJson($this->file, $data);
+        $this->db = Database::getInstance();
+        $this->groupId = $groupId ?: 'default';
     }
 
     /**
@@ -30,23 +17,10 @@ class SystemLog {
      * @param array $data Specific data for the event
      */
     public function log($type, $data) {
-        $allData = $this->getData();
-        
-        $entry = [
-            'id' => uniqid('log_'),
-            'type' => $type,
-            'timestamp' => time(),
-            'data' => $data
-        ];
-
-        $allData['logs'][] = $entry;
-        
-        // Optional: Limit total logs to avoid file bloat (e.g., keep last 5000)
-        if (count($allData['logs']) > 5000) {
-            array_shift($allData['logs']);
-        }
-
-        return $this->saveData($allData);
+        $id = uniqid('log_');
+        $timestamp = time();
+        $sql = "INSERT INTO `activity_logs` (id, group_id, type, timestamp, data) VALUES (?, ?, ?, ?, ?)";
+        return $this->db->query($sql, [$id, $this->groupId, $type, $timestamp, json_encode($data)]);
     }
 
     /**
@@ -55,15 +29,23 @@ class SystemLog {
      * @return array
      */
     public function getLogs($type = null) {
-        $allData = $this->getData();
-        $logs = $allData['logs'] ?? [];
-
         if ($type) {
-            return array_filter($logs, function($l) use ($type) {
-                return $l['type'] === $type;
-            });
+            $sql = "SELECT * FROM `activity_logs` WHERE group_id = ? AND type = ? ORDER BY timestamp DESC";
+            $rows = $this->db->fetchAll($sql, [$this->groupId, $type]);
+        } else {
+            $sql = "SELECT * FROM `activity_logs` WHERE group_id = ? ORDER BY timestamp DESC";
+            $rows = $this->db->fetchAll($sql, [$this->groupId]);
         }
 
+        $logs = [];
+        foreach ($rows as $row) {
+            $logs[] = [
+                'id' => $row['id'],
+                'type' => $row['type'],
+                'timestamp' => (int)$row['timestamp'],
+                'data' => json_decode($row['data'], true)
+            ];
+        }
         return $logs;
     }
 
@@ -73,26 +55,22 @@ class SystemLog {
     public function removeLogsByGuestId($guestId) {
         if (!$guestId) return false;
         
-        $allData = $this->getData();
-        $originalCount = count($allData['logs']);
-        
-        $allData['logs'] = array_filter($allData['logs'], function($l) use ($guestId) {
-            return ($l['data']['guestId'] ?? '') !== $guestId;
-        });
-        $allData['logs'] = array_values($allData['logs']);
-
-        if (count($allData['logs']) !== $originalCount) {
-            return $this->saveData($allData);
-        }
-        return true;
+        // This is tricky because data is JSON. MySQL 5.7+ has JSON support, but let's be compatible.
+        // We'll fetch all, filter and delete/update or use LIKE if data is simple.
+        // Actually, simpler to just delete where data contains the guestId.
+        $sql = "DELETE FROM `activity_logs` WHERE group_id = ? AND data LIKE ?";
+        return $this->db->query($sql, [$this->groupId, '%' . $guestId . '%']);
     }
 
     /**
      * Batch update logs (used for backfill persistence)
      */
     public function updateLogs($logs) {
-        $allData = $this->getData();
-        $allData['logs'] = $logs;
-        return $this->saveData($allData);
+        // Clear and re-insert or just ignore for now as it's for migration/backfill
+        $this->db->query("DELETE FROM `activity_logs` WHERE group_id = ?", [$this->groupId]);
+        foreach ($logs as $log) {
+            $this->log($log['type'], $log['data']);
+        }
+        return true;
     }
 }

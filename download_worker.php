@@ -13,7 +13,6 @@ if ($argc < 2) {
 }
 
 $videoId = $argv[1];
-$playlistFile = __DIR__ . '/playlist.json';
 $videoUrl = "https://www.youtube.com/watch?v={$videoId}";
 $outputFile = "public/media/videos/{$videoId}.mp4";
 $absoluteOutputPath = __DIR__ . '/' . $outputFile;
@@ -72,20 +71,16 @@ if (file_exists($progressFile)) {
     unlink($progressFile);
 }
 
-// Update playlist.json
+// Update Database
 if ($returnVar === 0 && file_exists($absoluteOutputPath)) {
-    // Read playlist
-    $playlist = json_decode(file_get_contents($playlistFile), true);
+    require_once __DIR__ . '/app/Services/Database.php';
+    $db = Database::getInstance();
     
-    // Find the video with this ID and update it
-    foreach ($playlist as &$video) {
-        if ($video['id'] === $videoId && isset($video['downloading']) && $video['downloading'] === true) {
-            $video['local_file'] = $outputFile;
-            unset($video['downloading']); // Remove downloading flag
-            break;
-        }
-    }
+    // Update all matching video IDs in playlist table across all groups
+    // (though usually a specific videoId download is triggered for a specific group,
+    // we can update all that are waiting for it)
+    $db->query("UPDATE `playlist` SET downloading = 0, local_path = ? WHERE video_id = ? AND downloading = 1", [$outputFile, $videoId]);
     
-    // Save updated playlist
-    file_put_contents($playlistFile, json_encode($playlist, JSON_PRETTY_PRINT));
+    // Also update guests' songs if they were marked differently (optional, based on model)
+    // The Guest model stores everything in a JSON column, which is harder to update globally.
 }
