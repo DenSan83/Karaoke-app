@@ -26,6 +26,9 @@
 </div>
 
 <div id="overlay-message">
+    <?php if (!empty($groupName)): ?>
+        <h2 id="party-name"><?= htmlspecialchars($groupName) ?></h2>
+    <?php endif; ?>
     <h1>Welcome to my Karaoke app!</h1>
     <p>Have you joined the party?</p>
 </div>

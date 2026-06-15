@@ -119,7 +119,15 @@ class SuperAdminController {
                     rename($oldName, $newName);
                 }
             }
+            // ID will be updated in the database by $this->groupModel->update($id, $data)
+            // since $data['id'] is now set to $newId below
             $data['id'] = $newId;
+
+            // Update associated database tables
+            $tablesToUpdate = ['activity_logs', 'guests', 'player_status', 'playlist', 'settings'];
+            foreach ($tablesToUpdate as $table) {
+                $this->groupModel->updateRelatedTable($table, $id, $newId);
+            }
         }
         unset($data['new_id']);
 

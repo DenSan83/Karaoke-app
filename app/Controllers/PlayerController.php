@@ -12,6 +12,7 @@ class PlayerController {
         }
         $data = [
             'groupId' => $groupId,
+            'groupName' => $group['name'] ?? '',
             'basePath' => $basePath ?: './'
         ];
         extract($data);

@@ -26,6 +26,7 @@ Thumbs.db
 
 # Temporary files
 /temp/
+/temp_sessions/
 
 # Project-installed binaries
 /bin/

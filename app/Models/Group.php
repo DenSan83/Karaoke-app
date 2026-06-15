@@ -50,8 +50,7 @@ class Group {
         $fields = [];
         $params = [];
         foreach ($data as $key => $value) {
-            if ($key === 'id') continue; // Don't update ID via this method for simplicity
-            $fields[] = "$key = ?";
+            $fields[] = "`$key` = ?";
             $params[] = $value;
         }
         if (empty($fields)) return true;
@@ -63,6 +62,19 @@ class Group {
 
     public function delete($id) {
         return $this->db->query("DELETE FROM `groups` WHERE id = ?", [$id]);
+    }
+
+    public function updateRelatedTable($table, $oldGroupId, $newGroupId) {
+        $sql = "UPDATE `$table` SET group_id = ? WHERE group_id = ?";
+        $result = $this->db->query($sql, [$newGroupId, $oldGroupId]);
+        
+        // Also update data in activity_logs if it contains the old ID (e.g. in JSON data)
+        if ($table === 'activity_logs') {
+             $sqlJson = "UPDATE `activity_logs` SET data = REPLACE(data, ?, ?) WHERE group_id = ?";
+             $this->db->query($sqlJson, [$oldGroupId, $newGroupId, $newGroupId]);
+        }
+        
+        return $result;
     }
 
     private function generateUniqueId($groups, $length) {

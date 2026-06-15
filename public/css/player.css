@@ -1,3 +1,8 @@
+:root {
+    --primary-color: #bb86fc;
+    --secondary-color: #03dac6;
+}
+
 body,
 html {
     margin: 0;
@@ -41,6 +46,14 @@ html {
     align-items: center;
     z-index: 20;
     text-align: center;
+}
+
+#overlay-message h2#party-name {
+    color: var(--secondary-color);
+    font-size: 2rem;
+    margin-bottom: 5px;
+    text-transform: none;
+    letter-spacing: normal;
 }
 
 #overlay-message h1,

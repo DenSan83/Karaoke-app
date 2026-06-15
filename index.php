@@ -2,6 +2,14 @@
 // Set session cookie and garbage collector lifetime to 4 hours (14400 seconds)
 ini_set('session.gc_maxlifetime', 14400);
 session_set_cookie_params(14400);
+
+// Set local session save path to avoid permission issues with default temp folder
+$sessionPath = __DIR__ . DIRECTORY_SEPARATOR . 'temp_sessions';
+if (!is_dir($sessionPath)) {
+    mkdir($sessionPath, 0777, true);
+}
+ini_set('session.save_path', $sessionPath);
+
 session_start();
 
 // Check system requirements (skip for installing page)
@@ -102,8 +110,21 @@ switch ($route) {
         break;
 
     case 'screen':
+        require_once 'app/Models/Group.php';
+        $groupModel = new Group();
+        $allGroups = $groupModel->getAll();
+        $activeGroups = array_filter($allGroups, function($g) use ($groupModel) {
+            return $groupModel->isValid($g);
+        });
+
+        if (count($activeGroups) === 1) {
+            $onlyGroup = reset($activeGroups);
+            header('Location: ' . ($basePath ?: '.') . '/screen/' . $onlyGroup['id']);
+            exit;
+        }
+
         $controller = new PlayerController();
-        $controller->index();
+        $controller->index(null, $basePath);
         break;
     
     case 'superadmin':

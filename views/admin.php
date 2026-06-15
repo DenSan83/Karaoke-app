@@ -10,7 +10,7 @@
 <body>
 
 <nav class="navbar">
-    <div class="logo">Party Admin</div>
+    <div class="logo"><?= htmlspecialchars($partyName) ?></div>
     <button id="hamburgerBtn" class="hamburger">
         <span></span>
         <span></span>

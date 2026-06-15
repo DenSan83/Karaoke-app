@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Access Codes</title>
+    <title><?= htmlspecialchars($partyName) ?> - Access Codes</title>
     <base href="<?= htmlspecialchars($basePath) ?>/">
     <link rel="stylesheet" href="public/css/admin.css">
     <link rel="stylesheet" href="public/css/admin_codes.css">
@@ -13,7 +13,7 @@
         <header class="admin-header">
             <div class="header-content">
                 <a href="admin" class="back-link">← Back to Dashboard</a>
-                <h1>Guest Access Codes</h1>
+                <h1><?= htmlspecialchars($partyName) ?> - Guest Access Codes</h1>
             </div>
         </header>
 

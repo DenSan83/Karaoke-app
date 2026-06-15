@@ -6,6 +6,7 @@ class AdminController {
     private $guestModel;
     private $playlistModel;
     private $basePath;
+    private $partyName;
 
     public function __construct($basePath = '') {
         $this->basePath = $basePath;
@@ -14,11 +15,22 @@ class AdminController {
             exit;
         }
         $this->groupId = $_SESSION['group_id'] ?? null;
+        
+        $this->partyName = 'Party Admin';
+        if ($this->groupId) {
+            require_once 'app/Models/Group.php';
+            $groupModel = new Group();
+            $group = $groupModel->getById($this->groupId);
+            if ($group) {
+                $this->partyName = $group['name'];
+            }
+        }
     }
 
     public function index() {
         $data = [
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath ?: './',
+            'partyName' => $this->partyName
         ];
         extract($data);
         require_once 'views/admin.php';
@@ -26,7 +38,8 @@ class AdminController {
 
     public function requests() {
         $data = [
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath ?: './',
+            'partyName' => $this->partyName
         ];
         extract($data);
         require_once 'views/admin_requests.php';
@@ -34,7 +47,8 @@ class AdminController {
 
     public function logs() {
         $data = [
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath ?: './',
+            'partyName' => $this->partyName
         ];
         extract($data);
         require_once 'app/Models/SystemLog.php';
@@ -156,7 +170,8 @@ class AdminController {
         $data = [
             'allGuests' => $allGuests,
             'userLogs' => $userLogs,
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath ?: './',
+            'partyName' => $this->partyName
         ];
         extract($data);
         require_once 'views/admin_logs.php';
@@ -164,7 +179,8 @@ class AdminController {
 
     public function codes() {
         $data = [
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath ?: './',
+            'partyName' => $this->partyName
         ];
         extract($data);
         require_once 'app/Models/Settings.php';

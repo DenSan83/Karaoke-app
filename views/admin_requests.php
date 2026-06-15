@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Requests Management - Party Admin</title>
+    <title>Requests Management - <?= htmlspecialchars($partyName) ?></title>
     <base href="<?= htmlspecialchars($basePath) ?>/">
     <link rel="stylesheet" href="public/css/admin.css">
     <link rel="stylesheet" href="public/css/admin_requests.css">
@@ -11,7 +11,7 @@
 <body>
 
 <nav class="navbar">
-    <div class="logo">Party Admin</div>
+    <div class="logo"><?= htmlspecialchars($partyName) ?></div>
     <div class="navbar-controls">
         <a href="admin" class="nav-btn next nav-back-to-queue">Back to Queue</a>
     </div>
