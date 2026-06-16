@@ -136,7 +136,7 @@ class Playlist {
         ];
     }
 
-    private function spawnBackgroundDownload($videoId) {
+    public function spawnBackgroundDownload($videoId) {
         $workerScript = __DIR__ . '/../../download_worker.php';
         $isWindows = DIRECTORY_SEPARATOR === '\\';
         

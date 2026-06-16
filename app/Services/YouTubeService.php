@@ -68,6 +68,39 @@ class YouTubeService {
     }
 
     /**
+     * Check if a video is embeddable.
+     */
+    public function isEmbeddable($videoId) {
+        $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$videoId}&format=json";
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_NOBODY, true); // We only need the headers/status code
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // oEmbed returns 200 for embeddable videos, 401/403/404 for non-embeddable
+        return $httpCode === 200;
+    }
+
+    /**
+     * Check if a video can be downloaded via yt-dlp.
+     */
+    public function isDownloadable($videoId) {
+        require_once __DIR__ . '/SystemCheck.php';
+        $ytDlp = SystemCheck::getYtDlpPath();
+        $videoUrl = "https://www.youtube.com/watch?v={$videoId}";
+        
+        // Use --simulate to check without downloading
+        $cmd = "\"{$ytDlp}\" --simulate \"{$videoUrl}\" 2>&1";
+        exec($cmd, $output, $returnCode);
+
+        return $returnCode === 0;
+    }
+
+    /**
      * Check if URL is a YouTube playlist
      */
     public function isPlaylistUrl($url) {

@@ -123,11 +123,27 @@ class ApiController {
             return;
         }
 
+        // Check if we have a local download first
+        $playlist = json_decode($this->playlistModel->getAll(), true);
+        foreach ($playlist as $video) {
+            if ($video['id'] === $videoId && !empty($video['local_path'])) {
+                if (file_exists(__DIR__ . '/../../' . $video['local_path'])) {
+                    echo json_encode(['url' => $video['local_path'], 'local' => true]);
+                    return;
+                }
+            }
+        }
+
         $result = $this->playlistModel->getStreamUrl($videoId);
         
         if (isset($result['error'])) {
-            http_response_code(404);
-            echo json_encode($result);
+            // Stream failed, attempt download
+            $downloadResult = $this->playlistModel->spawnBackgroundDownload($videoId);
+            echo json_encode([
+                'error' => 'Stream unavailable, download started',
+                'downloading' => true,
+                'videoId' => $videoId
+            ]);
         } else {
             echo json_encode($result);
         }

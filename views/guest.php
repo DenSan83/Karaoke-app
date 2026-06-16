@@ -49,7 +49,10 @@
                     <input type="text" id="song-url" class="search-input" placeholder="Paste YouTube URL here" autocomplete="off">
                     <div id="search-results" class="search-dropdown"></div>
                 </div>
-                <button id="request-btn" class="add-btn" title="Add Song">➜</button>
+                <button id="request-btn" class="add-btn" title="Add Song">
+                    <span class="btn-text">➜</span>
+                    <span class="btn-spinner" style="display: none;">⌛</span>
+                </button>
             </div>
             <p id="request-msg" class="request-status-msg"></p>
         </section>

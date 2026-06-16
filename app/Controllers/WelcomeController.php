@@ -382,6 +382,18 @@ class WelcomeController {
         
         $metadata = $ytService->getMetadata($videoId);
         $title = $metadata['title'] ?? 'Unknown Title';
+
+        // TEST ACCESSIBILITY (Embed or Download)
+        if (!$ytService->isEmbeddable($videoId)) {
+            if (!$ytService->isDownloadable($videoId)) {
+                http_response_code(422);
+                echo json_encode([
+                    'success' => false,
+                    'error' => "This video cannot be played. YouTube restricts embedding and it cannot be downloaded."
+                ]);
+                return;
+            }
+        }
         
         // CHECK FOR "KARAOKE" KEYWORD
         $isForced = (bool)($data['force'] ?? false);
@@ -399,6 +411,7 @@ class WelcomeController {
             'id' => $videoId,
             'url' => $url,
             'title' => $title,
+            'can_embed' => $ytService->isEmbeddable($videoId),
             'added_at' => time()
         ];
 

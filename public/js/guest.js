@@ -96,9 +96,14 @@ requestBtn.addEventListener('click', async () => {
         return;
     }
 
-    msgDiv.textContent = "Adding to your list...";
+    const btnText = requestBtn.querySelector('.btn-text');
+    const btnSpinner = requestBtn.querySelector('.btn-spinner');
+
+    msgDiv.textContent = "Testing if video can be played...";
     msgDiv.className = 'request-status-msg muted';
     requestBtn.disabled = true;
+    if (btnText) btnText.style.display = 'none';
+    if (btnSpinner) btnSpinner.style.display = 'inline-block';
 
     try {
         const res = await fetch('api/guest_add_song', {
@@ -129,19 +134,68 @@ requestBtn.addEventListener('click', async () => {
         } else if (data.needsConfirmation) {
             msgDiv.textContent = "";
             requestBtn.disabled = false;
+            if (btnText) btnText.style.display = 'inline-block';
+            if (btnSpinner) btnSpinner.style.display = 'none';
             showKaraokeConfirmModal(data.title, url);
         } else {
             msgDiv.textContent = data.error || "Failed to add song";
             msgDiv.className = 'request-status-msg error';
             requestBtn.disabled = false;
+            if (btnText) btnText.style.display = 'inline-block';
+            if (btnSpinner) btnSpinner.style.display = 'none';
         }
     } catch (err) {
         console.error("Add Song Error:", err);
         msgDiv.textContent = "Error: " + err.message;
         msgDiv.className = 'request-status-msg error';
         requestBtn.disabled = false;
+        if (btnText) btnText.style.display = 'inline-block';
+        if (btnSpinner) btnSpinner.style.display = 'none';
     }
 });
+
+async function addConfirmedSong(url) {
+    const btnText = requestBtn.querySelector('.btn-text');
+    const btnSpinner = requestBtn.querySelector('.btn-spinner');
+
+    msgDiv.textContent = "Testing if video can be played...";
+    msgDiv.className = 'request-status-msg muted';
+    requestBtn.disabled = true;
+    if (btnText) btnText.style.display = 'none';
+    if (btnSpinner) btnSpinner.style.display = 'inline-block';
+
+    try {
+        const res = await fetch('api/guest_add_song', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                song: { url: url },
+                force: true
+            })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            msgDiv.textContent = "Successfully added!";
+            msgDiv.className = 'request-status-msg success';
+            urlInput.value = '';
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            msgDiv.textContent = data.error || "Failed to add song";
+            msgDiv.className = 'request-status-msg error';
+            requestBtn.disabled = false;
+            if (btnText) btnText.style.display = 'inline-block';
+            if (btnSpinner) btnSpinner.style.display = 'none';
+        }
+    } catch (err) {
+        console.error("Add Confirmed Song Error:", err);
+        msgDiv.textContent = "Error: " + err.message;
+        msgDiv.className = 'request-status-msg error';
+        requestBtn.disabled = false;
+        if (btnText) btnText.style.display = 'inline-block';
+        if (btnSpinner) btnSpinner.style.display = 'none';
+    }
+}
 
 // Enter key support
 urlInput.addEventListener('keypress', (e) => {
@@ -335,36 +389,7 @@ function showKaraokeConfirmModal(title, url) {
 
     karaokeYes.onclick = async () => {
         karaokeModal.classList.remove('active');
-        msgDiv.textContent = "Adding to your list...";
-        msgDiv.className = 'request-status-msg muted';
-        requestBtn.disabled = true;
-
-        try {
-            const res = await fetch('api/guest_add_song', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    song: { url: url },
-                    force: true
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                msgDiv.textContent = "Successfully added!";
-                msgDiv.className = 'request-status-msg success';
-                urlInput.value = '';
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                msgDiv.textContent = data.error || "Failed to add song";
-                msgDiv.className = 'request-status-msg error';
-                requestBtn.disabled = false;
-            }
-        } catch (err) {
-            console.error("Force Add Error:", err);
-            msgDiv.textContent = "Error: " + err.message;
-            msgDiv.className = 'request-status-msg error';
-            requestBtn.disabled = false;
-        }
+        await addConfirmedSong(url);
     };
 
     karaokeNo.onclick = () => {
