@@ -110,6 +110,6 @@
         </main>
     </div>
 
-    <script src="../public/js/admin_logs.js"></script>
+    <script src="public/js/admin_logs.js"></script>
 </body>
 </html>

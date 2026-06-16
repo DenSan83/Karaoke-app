@@ -157,6 +157,11 @@ switch ($route) {
         $controller->codes();
         break;
 
+    case 'codes':
+        header('Location: ' . ($basePath ?: '.') . '/admin/codes');
+        exit;
+        break;
+
     case 'api/update_code':
         $controller = new AdminController($basePath);
         $controller->updateCode();
@@ -190,6 +195,11 @@ switch ($route) {
     case 'admin/logs':
         $controller = new AdminController($basePath);
         $controller->logs();
+        break;
+
+    case 'logs':
+        header('Location: ' . ($basePath ?: '.') . '/admin/logs');
+        exit;
         break;
 
     case 'admin/logs/download_tracks':
@@ -335,6 +345,11 @@ switch ($route) {
     case 'api/get_requests':
         $controller = new ApiController();
         $controller->getRequests();
+        break;
+
+    case 'requests':
+        header('Location: ' . ($basePath ?: '.') . '/admin/requests');
+        exit;
         break;
 
     case 'api/refuse_request':

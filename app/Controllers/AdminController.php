@@ -14,6 +14,12 @@ class AdminController {
             header('Location: login');
             exit;
         }
+
+        // Allow superadmin to switch groups via GET parameter
+        if (isset($_GET['group_id']) && isset($_SESSION['is_superadmin']) && $_SESSION['is_superadmin']) {
+            $_SESSION['group_id'] = $_GET['group_id'];
+        }
+
         $this->groupId = $_SESSION['group_id'] ?? null;
         
         $this->partyName = 'Party Admin';

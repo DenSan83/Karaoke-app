@@ -22,7 +22,7 @@
         <a href="admin" class="sidebar-btn">
             <span class="icon">📋</span> <span class="btn-text">Queue</span>
         </a>
-        <a href="requests" id="optionsBtn" class="sidebar-btn active sidebar-options-active">
+        <a href="admin/requests" id="optionsBtn" class="sidebar-btn active sidebar-options-active">
             <span class="icon">🎵</span> <span class="btn-text">Requests</span>
         </a>
         <a href="logout" class="sidebar-btn logout-btn">
@@ -40,12 +40,12 @@
 
             <div id="guests-container">
                 <!-- Guests and songs will be loaded here -->
-                <p class="no-requests">Feature coming soon: Live guest monitoring and management.</p>
+                <p class="no-requests">Loading requests...</p>
             </div>
         </div>
     </main>
 </div>
 
-<script src="../public/js/admin_requests.js"></script>
+<script src="public/js/admin_requests.js"></script>
 </body>
 </html>

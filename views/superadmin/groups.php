@@ -116,6 +116,7 @@
                     <div class="party-actions">
                         <button class="btn btn-primary" onclick='showEditModal(<?= json_encode($group) ?>)'>Edit</button>
                         <button class="btn btn-danger" onclick="deleteGroup('<?= $group['id'] ?>')">Delete</button>
+                        <a href="<?= ($basePath ?? '') ?>/admin?group_id=<?= $group['id'] ?>" class="btn btn-primary" style="background:var(--primary-color); color:#000;">Manage</a>
                         <a href="<?= ($basePath ?? '') ?>/screen/<?= $group['id'] ?>" target="_blank" class="btn btn-primary" style="background:var(--secondary-color); color:#000;">Screen</a>
                     </div>
                 </div>
