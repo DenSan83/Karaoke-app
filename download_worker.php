@@ -15,8 +15,8 @@ if ($argc < 2) {
 $videoId = $argv[1];
 $videoUrl = "https://www.youtube.com/watch?v={$videoId}";
 $outputFile = "public/media/videos/{$videoId}.mp4";
-$absoluteOutputPath = __DIR__ . '/' . $outputFile;
-$progressFile = __DIR__ . '/temp/progress_' . $videoId . '.json';
+$absoluteOutputPath = __DIR__ . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $outputFile);
+$progressFile = __DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'progress_' . $videoId . '.json';
 
 // Ensure directories exist
 if (!is_dir(__DIR__ . '/temp')) {
@@ -46,6 +46,7 @@ $descriptorspec = [
 
 set_time_limit(0); // Unlimited execution time
 
+$pipes = [];
 $process = proc_open($fullCmd, $descriptorspec, $pipes);
 
 if (is_resource($process)) {
@@ -58,11 +59,17 @@ if (is_resource($process)) {
         flush();
     }
     
+    $errors = stream_get_contents($pipes[2]);
+    if (!empty($errors)) {
+        file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker Error for {$videoId}: {$errors}\n", FILE_APPEND);
+    }
+
     fclose($pipes[0]);
     fclose($pipes[1]);
     fclose($pipes[2]);
     $returnVar = proc_close($process);
 } else {
+    file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker failed to start proc_open for {$videoId}\n", FILE_APPEND);
     $returnVar = -1;
 }
 
@@ -73,14 +80,12 @@ if (file_exists($progressFile)) {
 
 // Update Database
 if ($returnVar === 0 && file_exists($absoluteOutputPath)) {
+    file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker Success for {$videoId}\n", FILE_APPEND);
     require_once __DIR__ . '/app/Services/Database.php';
     $db = Database::getInstance();
     
     // Update all matching video IDs in playlist table across all groups
-    // (though usually a specific videoId download is triggered for a specific group,
-    // we can update all that are waiting for it)
     $db->query("UPDATE `playlist` SET downloading = 0, local_path = ? WHERE video_id = ? AND downloading = 1", [$outputFile, $videoId]);
-    
-    // Also update guests' songs if they were marked differently (optional, based on model)
-    // The Guest model stores everything in a JSON column, which is harder to update globally.
+} else {
+    file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker Finished with error for {$videoId}. Code: {$returnVar}\n", FILE_APPEND);
 }

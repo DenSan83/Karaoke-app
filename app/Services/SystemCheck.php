@@ -187,6 +187,6 @@ class SystemCheck {
      * Check if running on Windows
      */
     private static function isWindows() {
-        return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        return DIRECTORY_SEPARATOR === '\\';
     }
 }

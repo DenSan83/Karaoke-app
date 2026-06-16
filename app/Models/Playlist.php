@@ -138,7 +138,7 @@ class Playlist {
 
     private function spawnBackgroundDownload($videoId) {
         $workerScript = __DIR__ . '/../../download_worker.php';
-        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $isWindows = DIRECTORY_SEPARATOR === '\\';
         
         // Log the spawn attempt
         $logFile = __DIR__ . '/../../temp/spawn_log.txt';
@@ -152,7 +152,6 @@ class Playlist {
             $phpPath = PHP_BINARY;
             if (strpos(strtolower($phpPath), 'httpd.exe') !== false || strpos(strtolower($phpPath), 'apache') !== false) {
                 // Try to find php.exe in WAMP's bin directory matching current version
-                $version = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '.' . PHP_RELEASE_VERSION;
                 $wampPhpDir = 'C:/wamp64/bin/php/php' . PHP_VERSION . '/php.exe';
                 if (file_exists($wampPhpDir)) {
                     $phpPath = $wampPhpDir;
@@ -176,8 +175,10 @@ class Playlist {
             
             // Create a VBS script to run PHP in background (hidden window)
             // Properly escape paths for VBScript
+            $phpPath = str_replace('/', '\\', $phpPath);
             $escapedPhp = str_replace('"', '""', $phpPath);
-            $escapedWorker = str_replace('"', '""', realpath($workerScript));
+            $workerScriptPath = str_replace('/', '\\', realpath($workerScript));
+            $escapedWorker = str_replace('"', '""', $workerScriptPath);
             
             $vbsContent = "Set WshShell = CreateObject(\"WScript.Shell\")\n";
             $vbsContent .= "WshShell.Run \"\"\"{$escapedPhp}\"\" \"\"{$escapedWorker}\"\" {$videoId}\", 0, False\n";
@@ -186,13 +187,19 @@ class Playlist {
             // Execute VBS script
             exec("cscript //nologo \"{$vbsScript}\"");
             
-            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Used PHP: {$phpPath}\n", FILE_APPEND);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Used PHP (Windows): {$phpPath}\n", FILE_APPEND);
             file_put_contents($logFile, date('Y-m-d H:i:s') . " - VBS script created and executed\n", FILE_APPEND);
         } else {
             // Linux: Use & to run in background
-            $cmd = "php \"{$workerScript}\" {$videoId} > /dev/null 2>&1 &";
+            // Use PHP_BINARY if it looks like a real binary, else fallback to 'php'
+            $phpPath = PHP_BINARY;
+            if (strpos($phpPath, 'php') === false) {
+                $phpPath = 'php';
+            }
+            
+            $cmd = "{$phpPath} \"{$workerScript}\" {$videoId} > /dev/null 2>&1 &";
             exec($cmd);
-            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Linux command executed\n", FILE_APPEND);
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Linux command executed: {$cmd}\n", FILE_APPEND);
         }
     }
 
