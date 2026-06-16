@@ -22,9 +22,6 @@
         <a href="admin" class="sidebar-btn">
             <span class="icon">📋</span> <span class="btn-text">Queue</span>
         </a>
-        <a href="admin/requests" id="optionsBtn" class="sidebar-btn active sidebar-options-active">
-            <span class="icon">🎵</span> <span class="btn-text">Requests</span>
-        </a>
         <a href="logout" class="sidebar-btn logout-btn">
             <span class="icon">⏻</span> <span class="btn-text">Logout</span>
         </a>

@@ -126,7 +126,7 @@ body {
     border: 1px solid rgba(207, 102, 121, 0.2);
     text-decoration: none;
     margin-bottom: 20px;
-    margin-top: 20px;
+    margin-top: auto;
 }
 
 .logout-btn:hover {
