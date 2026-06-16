@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (data.success) {
                     if (data.rejoining || data.autoLogin) {
-                        window.location.href = 'guest-dashboard';
+                        window.location.href = (typeof BASE_PATH !== 'undefined' && BASE_PATH ? BASE_PATH + '/' : '') + 'guest';
                     } else {
                         if (data.distantName) {
                             nameInput.value = data.distantName;
@@ -80,9 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ name })
                 });
                 const data = await res.json();
-
                 if (data.success) {
-                    window.location.href = 'guest-dashboard';
+                    window.location.href = (typeof BASE_PATH !== 'undefined' && BASE_PATH ? BASE_PATH + '/' : '') + 'guest';
                 } else {
                     error2.textContent = data.error || 'Failed to join';
                 }

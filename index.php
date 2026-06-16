@@ -198,17 +198,17 @@ switch ($route) {
         break;
 
     case 'login':
-        $controller = new AuthController();
+        $controller = new AuthController($basePath);
         $controller->index();
         break;
 
     case 'logout':
-        $controller = new AuthController();
+        $controller = new AuthController($basePath);
         $controller->logout();
         break;
 
     case 'auth':
-        $controller = new AuthController();
+        $controller = new AuthController($basePath);
         $controller->login();
         break;
 
@@ -256,11 +256,11 @@ switch ($route) {
         break;
 
     case 'welcome':
-        header('Location: ./');
+        header('Location: ' . ($basePath ?: './'));
         exit;
         break;
 
-    case 'guest-dashboard':
+    case 'guest':
         require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->dashboard();

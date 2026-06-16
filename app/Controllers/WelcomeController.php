@@ -14,7 +14,7 @@ class WelcomeController {
 
     public function index() {
         if (isset($_SESSION['guest_id'])) {
-            header('Location: guest-dashboard');
+            header('Location: ' . ($this->basePath ?: './') . 'guest');
             exit;
         }
         $data = [
@@ -26,7 +26,7 @@ class WelcomeController {
 
     public function dashboard() {
         if (!isset($_SESSION['guest_id'])) {
-            header('Location: ./');
+            header('Location: ' . ($this->basePath ?: './'));
             exit;
         }
 
@@ -37,14 +37,14 @@ class WelcomeController {
             session_destroy();
             // Clear persistent cookie as well
             setcookie('karaoke_guest_id', '', time() - 3600, '/');
-            header('Location: ./?session_ended=1');
+            header('Location: ' . ($this->basePath ?: './') . '?session_ended=1');
             exit;
         }
 
         $guest = $this->guestModel->getById($_SESSION['guest_id']);
         if (!$guest) {
             unset($_SESSION['guest_id']);
-            header('Location: ./');
+            header('Location: ' . ($this->basePath ?: './'));
             exit;
         }
 
@@ -102,7 +102,7 @@ class WelcomeController {
             'basePath' => $this->basePath ?: './'
         ];
         extract($data);
-        require_once 'views/guest_dashboard.php';
+        require_once 'views/guest.php';
     }
 
     public function verifyCode() {

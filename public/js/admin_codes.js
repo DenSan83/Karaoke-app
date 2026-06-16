@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
             msg.textContent = '';
 
             try {
-                const res = await fetch('../api/update_code', {
+                const res = await fetch('api/update_code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ codes: window.currentCodes })

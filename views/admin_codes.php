@@ -58,6 +58,6 @@
         window.groupId = <?= json_encode($_SESSION['group_id'] ?? null) ?>;
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="../public/js/admin_codes.js"></script>
+    <script src="public/js/admin_codes.js"></script>
 </body>
 </html>

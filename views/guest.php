@@ -6,10 +6,10 @@
     <title>My Requests - Karaoke Party</title>
     <base href="<?= htmlspecialchars($basePath) ?>/">
     <link rel="stylesheet" href="public/css/admin.css">
-    <link rel="stylesheet" href="public/css/guest_dashboard.css">
+    <link rel="stylesheet" href="public/css/guest.css">
 </head>
 <body>
-    <div class="guest-dashboard">
+    <div class="guest-container">
         <header class="guest-header">
             <div class="guest-welcome">
                 <h1>Hi, <?php echo htmlspecialchars($guest['name']); ?>!</h1>
@@ -139,6 +139,6 @@
         window.guestSongs = <?php echo json_encode($guest['songs']); ?>;
         window.activeNotifications = <?php echo json_encode($guest['notifications'] ?? []); ?>;
     </script>
-    <script src="public/js/guest_dashboard.js"></script>
+    <script src="public/js/guest.js"></script>
 </body>
 </html>
