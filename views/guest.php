@@ -13,6 +13,7 @@
         <header class="guest-header">
             <div class="guest-welcome">
                 <h1>Hi, <?php echo htmlspecialchars($guest['name']); ?>!</h1>
+                <h2 class="party-name"><?php echo htmlspecialchars($partyName); ?></h2>
                 <p>What would you like to sing?</p>
             </div>
             <a href="logout" class="logout-icon" title="Leave Party">

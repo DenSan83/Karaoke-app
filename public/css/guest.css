@@ -20,6 +20,13 @@
     text-align: left;
 }
 
+.guest-welcome .party-name {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    margin: 5px 0 0;
+    font-weight: 500;
+}
+
 .guest-welcome p {
     margin: 5px 0 0;
     color: #888;

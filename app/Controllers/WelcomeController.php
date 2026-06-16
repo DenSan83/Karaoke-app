@@ -48,6 +48,17 @@ class WelcomeController {
             exit;
         }
 
+        // Get party name
+        require_once 'app/Models/Group.php';
+        $groupModel = new Group();
+        $partyName = 'Karaoke Party';
+        if (isset($_SESSION['group_id'])) {
+            $group = $groupModel->getById($_SESSION['group_id']);
+            if ($group) {
+                $partyName = $group['name'];
+            }
+        }
+
         // Calculate song statuses
         require_once 'app/Models/Playlist.php';
         require_once 'app/Models/PlayerStatus.php';
@@ -98,6 +109,7 @@ class WelcomeController {
 
         $data = [
             'guest' => $guest,
+            'partyName' => $partyName,
             'calculateStatus' => $calculateStatus,
             'basePath' => $this->basePath ?: './'
         ];
