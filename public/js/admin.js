@@ -219,14 +219,22 @@ document.addEventListener('DOMContentLoaded', () => {
             localPlayBtn.className = 'icon-btn play-icon';
             localPlayBtn.textContent = '▶';
             localPlayBtn.title = 'Play Now';
-            localPlayBtn.onclick = () => jumpToVideo(index);
+            if (reorderMode) {
+                localPlayBtn.disabled = true;
+            } else {
+                localPlayBtn.onclick = () => jumpToVideo(index);
+            }
             actionsDiv.appendChild(localPlayBtn);
 
             const removeBtn = document.createElement('button');
             removeBtn.className = 'icon-btn remove-icon';
             removeBtn.textContent = '🗑';
             removeBtn.title = 'Remove';
-            removeBtn.onclick = () => removeVideo(index);
+            if (reorderMode) {
+                removeBtn.disabled = true;
+            } else {
+                removeBtn.onclick = () => removeVideo(index);
+            }
             actionsDiv.appendChild(removeBtn);
 
             li.appendChild(actionsDiv);
@@ -447,11 +455,15 @@ document.addEventListener('DOMContentLoaded', () => {
             reorderMode = !reorderMode;
             reorderBtn.classList.toggle('active');
 
-            // Disable/Enable playback controls and Add button
-            const controls = [playBtn, pauseBtn, nextBtn, restartBtn, openModalBtn];
+            // Disable/Enable playback controls, Add button and Options button
+            const controls = [playBtn, pauseBtn, nextBtn, restartBtn, openModalBtn, optionsBtn];
             controls.forEach(btn => {
                 if (btn) btn.disabled = reorderMode;
             });
+
+            if (reorderMode && optionsSubmenu) {
+                optionsSubmenu.classList.add('hidden');
+            }
 
             if (reorderMode) {
                 showMessage('Reorder mode enabled. Drag items to rearrange.', 'success');
@@ -547,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (optionsBtn && optionsSubmenu) {
         optionsBtn.addEventListener('click', (e) => {
+            if (reorderMode) return;
             e.stopPropagation();
             optionsSubmenu.classList.toggle('hidden');
         });

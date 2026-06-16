@@ -284,7 +284,8 @@ body {
 }
 
 .nav-btn:disabled,
-.sidebar-btn:disabled {
+.sidebar-btn:disabled,
+.icon-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);
