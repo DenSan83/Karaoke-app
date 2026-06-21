@@ -14,7 +14,7 @@ class WelcomeController {
 
     public function index() {
         if (isset($_SESSION['guest_id'])) {
-            header('Location: ' . ($this->basePath ?: './') . 'guest');
+            header('Location: ' . ($this->basePath ?: '') . '/guest');
             exit;
         }
 
@@ -23,7 +23,7 @@ class WelcomeController {
         $contactEmail = $settings->get('contact_email', 'contact@devdensan.com');
 
         $data = [
-            'basePath' => $this->basePath ?: './',
+            'basePath' => $this->basePath,
             'contactEmail' => $contactEmail
         ];
         extract($data);
@@ -32,7 +32,7 @@ class WelcomeController {
 
     public function dashboard() {
         if (!isset($_SESSION['guest_id'])) {
-            header('Location: ' . ($this->basePath ?: './'));
+            header('Location: ' . ($this->basePath ?: '/'));
             exit;
         }
 
@@ -43,14 +43,14 @@ class WelcomeController {
             session_destroy();
             // Clear persistent cookie as well
             setcookie('karaoke_guest_id', '', time() - 3600, '/');
-            header('Location: ' . ($this->basePath ?: './') . '?session_ended=1');
+            header('Location: ' . ($this->basePath ?: '') . '/?session_ended=1');
             exit;
         }
 
         $guest = $this->guestModel->getById($_SESSION['guest_id']);
         if (!$guest) {
             unset($_SESSION['guest_id']);
-            header('Location: ' . ($this->basePath ?: './'));
+            header('Location: ' . ($this->basePath ?: '/'));
             exit;
         }
 
@@ -117,7 +117,7 @@ class WelcomeController {
             'guest' => $guest,
             'partyName' => $partyName,
             'calculateStatus' => $calculateStatus,
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath
         ];
         extract($data);
         require_once 'views/guest.php';

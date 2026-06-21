@@ -18,6 +18,8 @@ class SuperAdminController {
         $groups = $this->groupModel->getAll();
         // Ensure $groups is always an array for the view
         if (!is_array($groups)) $groups = [];
+        $data = ['basePath' => $basePath];
+        extract($data);
         require_once 'views/superadmin/groups.php';
     }
 
@@ -33,6 +35,8 @@ class SuperAdminController {
         }
 
         $contactEmail = $settings->get('contact_email', 'contact@devdensan.com');
+        $data = ['basePath' => $basePath];
+        extract($data);
         require_once 'views/superadmin/contact.php';
     }
 
@@ -45,6 +49,8 @@ class SuperAdminController {
         $sql = "SELECT * FROM `activity_logs` ORDER BY timestamp DESC LIMIT 1000";
         $logs = $db->fetchAll($sql);
         
+        $data = ['basePath' => $basePath];
+        extract($data);
         require_once 'views/superadmin/logs.php';
     }
 

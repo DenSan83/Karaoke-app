@@ -95,6 +95,11 @@ class AuthController {
             $redirect = ($this->basePath ?: '') . '/login';
         }
 
+        // Ensure we don't have double slashes if basePath is empty but we added one
+        if (strpos($redirect, '//') === 0 && strpos($redirect, '///') !== 0) {
+            $redirect = '/' . ltrim($redirect, '/');
+        }
+
         $_SESSION = [];
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();

@@ -11,8 +11,8 @@ require_once 'app/Services/Database.php';
 
 // Auto-detect base path from script location
 $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /git_projects/08.karaoke_admin/index.php or /index.php
-$basePath = dirname($scriptName); // e.g., /git_projects/08.karaoke_admin or /
-if ($basePath === '/' || $basePath === '\\') {
+$basePath = str_replace('\\', '/', dirname($scriptName));
+if ($basePath === '/') {
     $basePath = '';
 }
 
@@ -44,7 +44,7 @@ if ($route !== 'installing' && strpos($route, 'api/install') !== 0) {
 if (!SystemCheck::checkYtDlp() &&
     $route !== 'installing' &&
     strpos($route, 'api/install') !== 0) {
-    header('Location: ' . $basePath . '/installing');
+    header('Location: ' . ($basePath ?: '') . '/installing');
     exit;
 }
 
@@ -64,7 +64,7 @@ if (isset($_SESSION['group_id']) && !isset($_SESSION['is_superadmin'])) {
             $groupModel->resetPin($group['id']);
         }
         session_destroy();
-        header('Location: ' . $basePath . '/login');
+        header('Location: ' . ($basePath ?: '') . '/login');
         exit;
     }
 }
@@ -112,7 +112,7 @@ switch ($route) {
 
         if (count($activeGroups) === 1) {
             $onlyGroup = reset($activeGroups);
-            header('Location: ' . ($basePath ?: '.') . '/screen/' . $onlyGroup['id']);
+            header('Location: ' . ($basePath ?: '') . '/screen/' . $onlyGroup['id']);
             exit;
         }
 
@@ -181,7 +181,7 @@ switch ($route) {
         break;
 
     case 'codes':
-        header('Location: ' . ($basePath ?: '.') . '/admin/codes');
+        header('Location: ' . ($basePath ?: '') . '/admin/codes');
         exit;
         break;
 
@@ -221,7 +221,7 @@ switch ($route) {
         break;
 
     case 'logs':
-        header('Location: ' . ($basePath ?: '.') . '/admin/logs');
+        header('Location: ' . ($basePath ?: '') . '/admin/logs');
         exit;
         break;
 
@@ -289,7 +289,7 @@ switch ($route) {
         break;
 
     case 'welcome':
-        header('Location: ' . ($basePath ?: './'));
+        header('Location: ' . ($basePath ?: '/'));
         exit;
         break;
 
@@ -371,7 +371,7 @@ switch ($route) {
         break;
 
     case 'requests':
-        header('Location: ' . ($basePath ?: '.') . '/admin/requests');
+        header('Location: ' . ($basePath ?: '') . '/admin/requests');
         exit;
         break;
 

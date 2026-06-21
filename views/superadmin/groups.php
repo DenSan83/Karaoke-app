@@ -193,13 +193,13 @@
                     <span class="btn-text">Management</span>
                 </button>
                 <div class="dropdown-content">
-                    <a href="<?= ($basePath ?? '') ?>/superadmin/contact">Edit Contact</a>
-                    <a href="<?= ($basePath ?? '') ?>/superadmin/logs">See logs</a>
+                    <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/contact">Edit Contact</a>
+                    <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/logs">See logs</a>
                 </div>
             </div>
             
             <div class="sidebar-options-container" style="margin-top: auto; width: 100%;">
-                <a href="<?= ($basePath ?? '') ?>/logout" class="sidebar-btn logout-btn">
+                <a href="<?= htmlspecialchars($basePath ?? '') ?>/logout" class="sidebar-btn logout-btn">
                     <span class="icon">
                         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
@@ -235,8 +235,8 @@
                     <div class="party-actions">
                         <button class="btn btn-primary" onclick='showEditModal(<?= json_encode($group) ?>)'>Edit</button>
                         <button class="btn btn-danger" onclick="deleteGroup('<?= $group['id'] ?>')">Delete</button>
-                        <a href="<?= ($basePath ?? '') ?>/admin?group_id=<?= $group['id'] ?>" class="btn btn-primary" style="background:var(--primary-color); color:#000;">Manage</a>
-                        <a href="<?= ($basePath ?? '') ?>/screen/<?= $group['id'] ?>" target="_blank" class="btn btn-primary" style="background:var(--secondary-color); color:#000;">Screen</a>
+                        <a href="<?= htmlspecialchars($basePath ?? '') ?>/admin?group_id=<?= $group['id'] ?>" class="btn btn-primary" style="background:var(--primary-color); color:#000;">Manage</a>
+                        <a href="<?= htmlspecialchars($basePath ?? '') ?>/screen/<?= $group['id'] ?>" target="_blank" class="btn btn-primary" style="background:var(--secondary-color); color:#000;">Screen</a>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -462,7 +462,7 @@
                 valid_to: document.getElementById('valid_to').value
             };
 
-            fetch('<?= $basePath ?>/api/superadmin/create_group', {
+            fetch('<?= htmlspecialchars($basePath ?? '') ?>/api/superadmin/create_group', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -498,7 +498,7 @@
                 valid_to: document.getElementById('edit_valid_to').value
             };
 
-            fetch('<?= $basePath ?>/api/superadmin/update_group', {
+            fetch('<?= htmlspecialchars($basePath ?? '') ?>/api/superadmin/update_group', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -513,7 +513,7 @@
 
         function deleteGroup(id) {
             if (!confirm('Are you sure you want to delete this party? All associated data (playlist, guests, logs) will be PERMANENTLY lost.')) return;
-            fetch('<?= $basePath ?>/api/superadmin/delete_group', {
+            fetch('<?= htmlspecialchars($basePath ?? '') ?>/api/superadmin/delete_group', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id })

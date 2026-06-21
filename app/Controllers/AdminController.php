@@ -35,7 +35,7 @@ class AdminController {
 
     public function index() {
         $data = [
-            'basePath' => $this->basePath ?: './',
+            'basePath' => $this->basePath,
             'partyName' => $this->partyName
         ];
         extract($data);
@@ -44,7 +44,7 @@ class AdminController {
 
     public function requests() {
         $data = [
-            'basePath' => $this->basePath ?: './',
+            'basePath' => $this->basePath,
             'partyName' => $this->partyName
         ];
         extract($data);
@@ -53,7 +53,7 @@ class AdminController {
 
     public function logs() {
         $data = [
-            'basePath' => $this->basePath ?: './',
+            'basePath' => $this->basePath,
             'partyName' => $this->partyName
         ];
         extract($data);
@@ -176,7 +176,7 @@ class AdminController {
         $data = [
             'allGuests' => $allGuests,
             'userLogs' => $userLogs,
-            'basePath' => $this->basePath ?: './',
+            'basePath' => $this->basePath,
             'partyName' => $this->partyName
         ];
         extract($data);
@@ -185,7 +185,7 @@ class AdminController {
 
     public function codes() {
         $data = [
-            'basePath' => $this->basePath ?: './',
+            'basePath' => $this->basePath,
             'partyName' => $this->partyName
         ];
         extract($data);
@@ -217,7 +217,7 @@ class AdminController {
         $data = [
             'guestCodes' => $guestCodes,
             'allowNewSessions' => $allowNewSessions,
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath
         ];
         extract($data);
         require_once 'views/admin_codes.php';
