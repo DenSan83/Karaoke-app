@@ -5,11 +5,20 @@ session_set_cookie_params(14400);
 
 session_start();
 
+// Load .env early so APP_TIMEZONE and other vars are available before any service init
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) $_ENV[trim($parts[0])] = trim($parts[1]);
+    }
+}
+date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'UTC');
+
 // Check system requirements (skip for installing page)
 require_once 'app/Services/SystemCheck.php';
 require_once 'app/Services/Database.php';
-
-date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'UTC');
 
 // Auto-detect base path from script location
 $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /git_projects/08.karaoke_admin/index.php or /index.php
