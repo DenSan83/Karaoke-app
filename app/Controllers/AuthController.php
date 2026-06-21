@@ -68,6 +68,17 @@ class AuthController {
         if ($authenticated) {
             $_SESSION['user'] = $usernameInput;
             $_SESSION['is_superadmin'] = $isSuperAdmin;
+
+            // Log the login
+            require_once 'app/Models/SystemLog.php';
+            $logGroupId = $isSuperAdmin ? 'system' : ($_SESSION['group_id'] ?? 'default');
+            $sysLog = new SystemLog($logGroupId);
+            $sysLog->log('user_login', [
+                'username' => $usernameInput,
+                'role' => $isSuperAdmin ? 'superadmin' : 'admin',
+                'timestamp' => time()
+            ]);
+
             $redirect = $isSuperAdmin ? 'superadmin' : 'admin';
             echo json_encode(['success' => true, 'redirect' => $redirect]);
         } else {
