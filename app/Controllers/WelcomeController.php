@@ -229,11 +229,6 @@ class WelcomeController {
                 $distantName = $decrypted['name'];
                 $_SESSION['used_code'] = $code;
                 $_SESSION['user_category'] = 'distant';
-                
-                // LOG THIS ACCESS
-                $logFile = 'distant_access.log';
-                $logEntry = date('Y-m-d H:i:s') . " - One-click access by: " . $decrypted['name'] . " (" . $decrypted['email'] . ") using code: " . substr($code, 0, 10) . "...\n";
-                file_put_contents($logFile, $logEntry, FILE_APPEND);
 
                 // AUTO-REGISTER AND LOGIN
                 $result = $this->guestModel->add($decrypted['name']);

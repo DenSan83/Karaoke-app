@@ -49,6 +49,10 @@ set_time_limit(0); // Unlimited execution time
 $pipes = [];
 $process = proc_open($fullCmd, $descriptorspec, $pipes);
 
+require_once __DIR__ . '/app/Services/Database.php';
+require_once __DIR__ . '/app/Models/SystemLog.php';
+$sysLog = new SystemLog();
+
 if (is_resource($process)) {
     while ($s = fgets($pipes[1])) {
         // Parse percent from output (e.g. " 45.6%")
@@ -58,10 +62,10 @@ if (is_resource($process)) {
         }
         flush();
     }
-    
+
     $errors = stream_get_contents($pipes[2]);
     if (!empty($errors)) {
-        file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker Error for {$videoId}: {$errors}\n", FILE_APPEND);
+        $sysLog->log('worker_event', ['status' => 'error', 'videoId' => $videoId, 'message' => $errors]);
     }
 
     fclose($pipes[0]);
@@ -69,7 +73,7 @@ if (is_resource($process)) {
     fclose($pipes[2]);
     $returnVar = proc_close($process);
 } else {
-    file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker failed to start proc_open for {$videoId}\n", FILE_APPEND);
+    $sysLog->log('worker_event', ['status' => 'error', 'videoId' => $videoId, 'message' => 'Failed to start proc_open']);
     $returnVar = -1;
 }
 
@@ -79,13 +83,12 @@ if (file_exists($progressFile)) {
 }
 
 // Update Database
+$db = Database::getInstance();
 if ($returnVar === 0 && file_exists($absoluteOutputPath)) {
-    file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker Success for {$videoId}\n", FILE_APPEND);
-    require_once __DIR__ . '/app/Services/Database.php';
-    $db = Database::getInstance();
-    
+    $sysLog->log('worker_event', ['status' => 'success', 'videoId' => $videoId]);
+
     // Update all matching video IDs in playlist table across all groups
     $db->query("UPDATE `playlist` SET downloading = 0, local_path = ? WHERE video_id = ? AND downloading = 1", [$outputFile, $videoId]);
 } else {
-    file_put_contents(__DIR__ . '/debug.log', date('Y-m-d H:i:s') . " - Worker Finished with error for {$videoId}. Code: {$returnVar}\n", FILE_APPEND);
+    $sysLog->log('worker_event', ['status' => 'failed', 'videoId' => $videoId, 'exitCode' => $returnVar]);
 }
