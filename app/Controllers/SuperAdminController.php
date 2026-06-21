@@ -21,6 +21,33 @@ class SuperAdminController {
         require_once 'views/superadmin/groups.php';
     }
 
+    public function contact() {
+        global $basePath;
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = $_POST['contact_email'] ?? '';
+            $settings->set('contact_email', $email);
+            $success = true;
+        }
+
+        $contactEmail = $settings->get('contact_email', 'contact@devdensan.com');
+        require_once 'views/superadmin/contact.php';
+    }
+
+    public function logs() {
+        global $basePath;
+        require_once 'app/Models/SystemLog.php';
+        $db = Database::getInstance();
+        
+        // We want to see ALL logs from activity_logs table across all groups
+        $sql = "SELECT * FROM `activity_logs` ORDER BY timestamp DESC LIMIT 1000";
+        $logs = $db->fetchAll($sql);
+        
+        require_once 'views/superadmin/logs.php';
+    }
+
     public function createGroup() {
         $data = json_decode(file_get_contents('php://input'), true);
         $name = $data['name'] ?? '';

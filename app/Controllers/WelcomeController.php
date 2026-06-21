@@ -17,8 +17,14 @@ class WelcomeController {
             header('Location: ' . ($this->basePath ?: './') . 'guest');
             exit;
         }
+
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        $contactEmail = $settings->get('contact_email', 'contact@devdensan.com');
+
         $data = [
-            'basePath' => $this->basePath ?: './'
+            'basePath' => $this->basePath ?: './',
+            'contactEmail' => $contactEmail
         ];
         extract($data);
         require_once 'views/welcome.php';

@@ -125,6 +125,16 @@ switch ($route) {
         $controller->index();
         break;
 
+    case 'superadmin/contact':
+        $controller = new SuperAdminController();
+        $controller->contact();
+        break;
+
+    case 'superadmin/logs':
+        $controller = new SuperAdminController();
+        $controller->logs();
+        break;
+
     case 'api/superadmin/create_group':
         $controller = new SuperAdminController();
         $controller->createGroup();

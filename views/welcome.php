@@ -53,7 +53,7 @@
             </div>
         </div>
         <div class="contact-card">
-            <p class="contact-text">Want to animate your party? <a href="mailto:contact@devdensan.com?subject=Karaoke%20app%20request" class="contact-btn">Contact me</a> for more information</p>
+            <p class="contact-text">Want to animate your party? <a href="mailto:<?= htmlspecialchars($contactEmail ?? 'contact@devdensan.com') ?>?subject=Karaoke%20app%20request" class="contact-btn">Contact me</a> for more information</p>
         </div>
     </div>
 

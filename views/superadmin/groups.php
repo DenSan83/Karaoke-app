@@ -100,6 +100,63 @@
             justify-content: center;
             border: 2px solid var(--bg-color);
         }
+
+        /* Management Dropdown */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--card-bg);
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+            z-index: 1000;
+            border-radius: 4px;
+            margin-top: 5px;
+            border: 1px solid #333;
+            top: 100%;
+            left: 0;
+        }
+        /* Bridge to prevent closing when moving mouse between button and dropdown */
+        .dropdown::after {
+            content: "";
+            position: absolute;
+            height: 10px;
+            width: 100%;
+            top: 100%;
+            left: 0;
+            display: none;
+        }
+        .dropdown:hover::after {
+            display: block;
+        }
+        .dropdown-content a {
+            color: var(--text-color);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+        }
+        .dropdown-content a:hover {
+            background-color: #333;
+            color: var(--primary-color);
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .dropdown:hover .btn-management {
+            background-color: #444;
+        }
+        .btn-management {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #444;
+        }
     </style>
 </head>
 <body>
@@ -124,6 +181,22 @@
             <button class="sidebar-btn" onclick="showCreateModal()">
                 <span class="icon">+</span> <span class="btn-text">Create Party</span>
             </button>
+            
+            <div class="dropdown" style="width: 100%; margin-top: 10px;">
+                <button class="sidebar-btn btn-management" style="width: 100%; text-align: left;">
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </span> 
+                    <span class="btn-text">Management</span>
+                </button>
+                <div class="dropdown-content">
+                    <a href="<?= ($basePath ?? '') ?>/superadmin/contact">Edit Contact</a>
+                    <a href="<?= ($basePath ?? '') ?>/superadmin/logs">See logs</a>
+                </div>
+            </div>
             
             <div class="sidebar-options-container" style="margin-top: auto; width: 100%;">
                 <a href="<?= ($basePath ?? '') ?>/logout" class="sidebar-btn logout-btn">
