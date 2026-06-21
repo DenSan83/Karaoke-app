@@ -26,15 +26,20 @@ class SuperAdminController {
         $name = $data['name'] ?? '';
         $adminUsername = $data['admin_username'] ?? '';
         $durationType = $data['duration_type'] ?? 'unlimited';
-        $validFrom = $data['valid_from'] ?? null;
-        $validTo = $data['valid_to'] ?? null;
+        $validFrom = !empty($data['valid_from']) ? $data['valid_from'] : null;
+        $validTo = !empty($data['valid_to']) ? $data['valid_to'] : null;
 
         if (empty($name) || empty($adminUsername)) {
             echo json_encode(['success' => false, 'message' => 'Name and Admin Username are required']);
             return;
         }
 
-        $newGroup = $this->groupModel->create($name, $adminUsername, $durationType, $validFrom, $validTo);
+        try {
+            $newGroup = $this->groupModel->create($name, $adminUsername, $durationType, $validFrom, $validTo);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+            return;
+        }
         if ($newGroup) {
             $id = $newGroup['id'];
 
@@ -130,6 +135,9 @@ class SuperAdminController {
             }
         }
         unset($data['new_id']);
+
+        if (isset($data['valid_from']) && $data['valid_from'] === '') $data['valid_from'] = null;
+        if (isset($data['valid_to']) && $data['valid_to'] === '') $data['valid_to'] = null;
 
         $success = $this->groupModel->update($id, $data);
         echo json_encode(['success' => $success]);
