@@ -9,6 +9,8 @@ session_start();
 require_once 'app/Services/SystemCheck.php';
 require_once 'app/Services/Database.php';
 
+date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'UTC');
+
 // Auto-detect base path from script location
 $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /git_projects/08.karaoke_admin/index.php or /index.php
 $basePath = str_replace('\\', '/', dirname($scriptName));
