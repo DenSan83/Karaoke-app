@@ -62,8 +62,8 @@ class WelcomeController {
         // Calculate song statuses
         require_once 'app/Models/Playlist.php';
         require_once 'app/Models/PlayerStatus.php';
-        $playlistModel = new Playlist();
-        $statusModel = new PlayerStatus();
+        $playlistModel = new Playlist($this->groupId);
+        $statusModel = new PlayerStatus($this->groupId);
         
         $playlist = json_decode($playlistModel->getAll(), true) ?? [];
         $status = $statusModel->get();
@@ -355,7 +355,7 @@ class WelcomeController {
         $playlistDuplicate = null;
         if (!$originalSinger) {
             require_once 'app/Models/Playlist.php';
-            $playlistModel = new Playlist();
+            $playlistModel = new Playlist($this->groupId);
             $playlistJson = $playlistModel->getAll();
             $playlist = json_decode($playlistJson, true) ?? [];
             
@@ -558,7 +558,26 @@ class WelcomeController {
             return;
         }
 
+        // Remove debug logs
         $success = $this->guestModel->removeSong($_SESSION['guest_id'], $videoId);
+
+        // Also remove from admin queue if it was already accepted
+        if ($success) {
+            require_once 'app/Models/Playlist.php';
+            $playlistModel = new Playlist($this->groupId);
+            $user = $_SESSION['guest_name'] ?? '';
+            $playlistModel->removeByVideoIdAndUser($videoId, $user);
+
+            // Log the removal
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog($this->groupId);
+            $sysLog->log('track_removed_by_user', [
+                'guestId' => $_SESSION['guest_id'],
+                'guestName' => $user,
+                'videoId' => $videoId
+            ]);
+        }
+
         echo json_encode(['success' => (bool)$success], JSON_UNESCAPED_UNICODE);
     }
 
@@ -640,8 +659,8 @@ class WelcomeController {
         // 1. Get current playlist status to filter out played/playing songs
         require_once 'app/Models/Playlist.php';
         require_once 'app/Models/PlayerStatus.php';
-        $playlistModel = new Playlist();
-        $statusModel = new PlayerStatus();
+        $playlistModel = new Playlist($this->groupId);
+        $statusModel = new PlayerStatus($this->groupId);
         
         $playlistJson = $playlistModel->getAll(); // returns JSON string
         $playlist = json_decode($playlistJson, true) ?? [];

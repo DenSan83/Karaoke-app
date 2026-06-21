@@ -3,13 +3,6 @@
 ini_set('session.gc_maxlifetime', 14400);
 session_set_cookie_params(14400);
 
-// Set local session save path to avoid permission issues with default temp folder
-$sessionPath = __DIR__ . DIRECTORY_SEPARATOR . 'temp_sessions';
-if (!is_dir($sessionPath)) {
-    mkdir($sessionPath, 0777, true);
-}
-ini_set('session.save_path', $sessionPath);
-
 session_start();
 
 // Check system requirements (skip for installing page)
@@ -145,6 +138,26 @@ switch ($route) {
     case 'api/superadmin/update_group':
         $controller = new SuperAdminController();
         $controller->updateGroup();
+        break;
+
+    case 'api/superadmin/bell/count':
+        $controller = new SuperAdminController();
+        $controller->getBellCount();
+        break;
+
+    case 'api/superadmin/bell/increment':
+        // Public endpoint — no auth required (called from the welcome page)
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        $count = (int)$settings->get('bell_counter', 0);
+        $count++;
+        $settings->set('bell_counter', $count);
+        echo json_encode(['success' => true, 'count' => $count]);
+        break;
+
+    case 'api/superadmin/bell/reset':
+        $controller = new SuperAdminController();
+        $controller->resetBellCount();
         break;
 
     case 'admin':

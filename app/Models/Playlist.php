@@ -211,14 +211,13 @@ class Playlist {
         }
         
         $itemToRemove = $playlist[$index];
-        $videoId = $itemToRemove['id'];
         
         // Check if local file exists
-        if (isset($itemToRemove['local_file'])) {
-            $filePath = __DIR__ . '/../../' . $itemToRemove['local_file'];
+        if (isset($itemToRemove['local_path'])) {
+            $filePath = __DIR__ . '/../../' . $itemToRemove['local_path'];
             
             // Count how many times this file is used in the database
-            $row = $this->db->fetch("SELECT COUNT(*) as usage_count FROM `playlist` WHERE local_path = ?", [$itemToRemove['local_file']]);
+            $row = $this->db->fetch("SELECT COUNT(*) as usage_count FROM `playlist` WHERE local_path = ?", [$itemToRemove['local_path']]);
             $usageCount = $row ? (int)$row['usage_count'] : 0;
 
             // Only delete the physical file if this is the LAST reference to it
@@ -236,6 +235,18 @@ class Playlist {
             // Re-normalize sort_order to avoid gaps (optional but good)
             $this->db->query("SET @rank = -1; UPDATE `playlist` SET sort_order = (@rank := @rank + 1) WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
         }
+        
+        return ['success' => true];
+    }
+
+    public function removeByVideoIdAndUser($videoId, $user) {
+        // Find if this video exists in the playlist for this user
+        // We use group_id, video_id and user to be precise
+        $sql = "DELETE FROM `playlist` WHERE group_id = ? AND video_id = ? AND user = ?";
+        $this->db->query($sql, [$this->groupId, $videoId, $user]);
+        
+        // Re-normalize sort_order
+        $this->db->query("SET @rank = -1; UPDATE `playlist` SET sort_order = (@rank := @rank + 1) WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
         
         return ['success' => true];
     }

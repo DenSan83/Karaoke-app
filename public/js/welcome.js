@@ -103,6 +103,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Contact button bell increment
+    const contactBtn = document.querySelector('.contact-btn');
+    if (contactBtn) {
+        contactBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const href = contactBtn.getAttribute('href');
+            const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/superadmin/bell/increment';
+            
+            fetch(apiUrl)
+                .then(() => {
+                    window.location.href = href;
+                })
+                .catch(err => {
+                    console.error('Error incrementing bell:', err);
+                    window.location.href = href;
+                });
+        });
+    }
+
     // Check for session ended message
     if (urlParams.has('session_ended')) {
         const modal = document.getElementById('goodbye-modal');

@@ -61,9 +61,55 @@
         .form-group input[type="text"]:focus, .form-group input[type="datetime-local"]:focus { border-color: var(--primary-color); }
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; }
         .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        /* Bell Notification Styles */
+        .bell-container {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 1001;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(187, 134, 252, 0.1);
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .bell-container:hover {
+            background: rgba(187, 134, 252, 0.2);
+        }
+        .bell-icon {
+            color: var(--primary-color);
+        }
+        .bell-counter {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--error-color);
+            color: #000;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--bg-color);
+        }
     </style>
 </head>
 <body>
+    <div class="bell-container" id="bellBtn" onclick="handleBellClick()">
+        <svg class="bell-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <div id="bellCounter" class="bell-counter">0</div>
+    </div>
     <nav class="navbar">
         <div class="logo">SuperAdmin Office</div>
         <button id="hamburgerBtn" class="hamburger">
@@ -217,6 +263,48 @@
                 hamburgerBtn.classList.toggle('active');
             });
         }
+
+        const BASE_PATH = '<?= $basePath ?? '' ?>';
+
+        async function fetchBellCount() {
+            try {
+                const response = await fetch(`${BASE_PATH}/api/superadmin/bell/count`);
+                const data = await response.json();
+                if (data.success) {
+                    updateBellDisplay(data.count);
+                }
+            } catch (e) { console.error('Error fetching bell count:', e); }
+        }
+
+        function updateBellDisplay(count) {
+            const counter = document.getElementById('bellCounter');
+            if (count > 0) {
+                counter.textContent = count;
+                counter.style.display = 'flex';
+            } else {
+                counter.style.display = 'none';
+                counter.textContent = '0';
+            }
+        }
+
+        async function handleBellClick() {
+            // Always Reset
+            const counter = document.getElementById('bellCounter');
+            if (counter.style.display === 'none') return;
+            
+            try {
+                const response = await fetch(`${BASE_PATH}/api/superadmin/bell/reset`);
+                const data = await response.json();
+                if (data.success) {
+                    updateBellDisplay(0);
+                }
+            } catch (e) { console.error('Error resetting bell:', e); }
+        }
+
+        // Initial fetch
+        fetchBellCount();
+        // Poll every 30 seconds
+        setInterval(fetchBellCount, 30000);
 
         function showCreateModal() {
             const modal = document.getElementById('createModal');

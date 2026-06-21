@@ -9,7 +9,7 @@ class AuthController {
 
     public function index() {
         if (isset($_SESSION['user'])) {
-            header('Location: ' . ($this->basePath ?: './') . 'admin');
+            header('Location: ' . ($this->basePath ?: '') . '/admin');
             exit;
         }
         require_once 'views/login.php';
@@ -90,9 +90,9 @@ class AuthController {
             $sysLog = new SystemLog($groupId);
             $sysLog->removeLogsByGuestId($guestId);
             
-            $redirect = ($this->basePath ?: './');
+            $redirect = ($this->basePath ?: '') . '/';
         } else {
-            $redirect = ($this->basePath ?: './') . 'login';
+            $redirect = ($this->basePath ?: '') . '/login';
         }
 
         session_destroy();

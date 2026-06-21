@@ -134,4 +134,27 @@ class SuperAdminController {
         $success = $this->groupModel->update($id, $data);
         echo json_encode(['success' => $success]);
     }
+
+    public function getBellCount() {
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        $count = (int)$settings->get('bell_counter', 0);
+        echo json_encode(['success' => true, 'count' => $count]);
+    }
+
+    public function incrementBellCount() {
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        $count = (int)$settings->get('bell_counter', 0);
+        $count++;
+        $settings->set('bell_counter', $count);
+        echo json_encode(['success' => true, 'count' => $count]);
+    }
+
+    public function resetBellCount() {
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        $settings->set('bell_counter', 0);
+        echo json_encode(['success' => true]);
+    }
 }

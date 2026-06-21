@@ -52,6 +52,9 @@
                 <div id="error-2" class="error-message"></div>
             </div>
         </div>
+        <div class="contact-card">
+            <p class="contact-text">Want to animate your party? <a href="mailto:contact@devdensan.com?subject=Karaoke%20app%20request" class="contact-btn">Contact me</a> for more information</p>
+        </div>
     </div>
 
     <!-- Goodbye Modal -->
