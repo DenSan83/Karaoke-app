@@ -44,7 +44,8 @@ function runMigration() {
             duration_type ENUM('unlimited', 'limited') NOT NULL,
             valid_from DATETIME NULL,
             valid_to DATETIME NULL,
-            created_at INT NOT NULL
+            created_at INT NOT NULL,
+            allow_fallback TINYINT(1) NOT NULL DEFAULT 0
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
         'settings' => "CREATE TABLE IF NOT EXISTS `settings` (

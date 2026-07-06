@@ -21,16 +21,16 @@ class Group {
         return $this->db->fetch("SELECT * FROM `groups` WHERE admin_username = ?", [$username]);
     }
 
-    public function create($name, $admin_username, $duration_type, $valid_from = null, $valid_to = null) {
+    public function create($name, $admin_username, $duration_type, $valid_from = null, $valid_to = null, $allow_fallback = 0) {
         $groups = $this->getAll();
         $id = $this->generateUniqueId($groups, 4);
         $pin = $this->generateUniquePin($groups, 6);
-        
-        $sql = "INSERT INTO `groups` (id, name, admin_username, admin_pin, duration_type, valid_from, valid_to, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $sql = "INSERT INTO `groups` (id, name, admin_username, admin_pin, duration_type, valid_from, valid_to, created_at, allow_fallback)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $createdAt = time();
-        $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $duration_type, $valid_from, $valid_to, $createdAt]);
-        
+        $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0]);
+
         if ($success) {
             return [
                 'id' => $id,
@@ -40,7 +40,8 @@ class Group {
                 'duration_type' => $duration_type,
                 'valid_from' => $valid_from,
                 'valid_to' => $valid_to,
-                'created_at' => $createdAt
+                'created_at' => $createdAt,
+                'allow_fallback' => $allow_fallback ? 1 : 0
             ];
         }
         return false;

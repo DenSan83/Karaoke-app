@@ -61,6 +61,7 @@ class SuperAdminController {
         $durationType = $data['duration_type'] ?? 'unlimited';
         $validFrom = !empty($data['valid_from']) ? $data['valid_from'] : null;
         $validTo = !empty($data['valid_to']) ? $data['valid_to'] : null;
+        $allowFallback = !empty($data['allow_fallback']) ? 1 : 0;
 
         if (empty($name) || empty($adminUsername)) {
             echo json_encode(['success' => false, 'message' => 'Name and Admin Username are required']);
@@ -68,7 +69,7 @@ class SuperAdminController {
         }
 
         try {
-            $newGroup = $this->groupModel->create($name, $adminUsername, $durationType, $validFrom, $validTo);
+            $newGroup = $this->groupModel->create($name, $adminUsername, $durationType, $validFrom, $validTo, $allowFallback);
         } catch (Throwable $e) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
             return;

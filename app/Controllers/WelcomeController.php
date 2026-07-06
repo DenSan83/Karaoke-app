@@ -386,12 +386,20 @@ class WelcomeController {
 
         // TEST ACCESSIBILITY (Embed or Download)
         if (!$ytService->isEmbeddable($videoId)) {
-            if (!$ytService->isDownloadable($videoId)) {
+            $fallbackAllowed = false;
+            if ($this->groupId) {
+                require_once 'app/Models/Group.php';
+                $groupModel = new Group();
+                $group = $groupModel->getById($this->groupId);
+                $fallbackAllowed = !empty($group['allow_fallback']);
+            }
+
+            if (!$fallbackAllowed || !$ytService->isDownloadable($videoId)) {
                 http_response_code(422);
-                echo json_encode([
-                    'success' => false,
-                    'error' => "This video cannot be played. YouTube restricts embedding and it cannot be downloaded."
-                ]);
+                $errorMsg = $fallbackAllowed
+                    ? "This video cannot be played. YouTube restricts embedding and it cannot be downloaded."
+                    : "YouTube restricts embedding of this video. Please find a different version and try again.";
+                echo json_encode(['success' => false, 'error' => $errorMsg]);
                 return;
             }
         }

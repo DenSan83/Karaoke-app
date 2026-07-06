@@ -31,7 +31,7 @@
         .party-card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-left: 5px solid var(--primary-color); position: relative; }
         .party-card h3 { margin: 0 0 10px 0; color: var(--primary-color); }
         .party-card p { margin: 5px 0; color: var(--text-color); opacity: 0.8; font-size: 0.9em; }
-        .pin-display { background: #2c2c2c; padding: 5px 10px; border-radius: 4px; border: 1px dashed #444; font-family: monospace; font-size: 1.2em; color: var(--secondary-color); display: inline-block; margin-top: 10px; }
+        .pin-display { background: #2c2c2c; padding: 5px 10px; border-radius: 4px; border: 1px dashed #444; font-family: monospace; font-size: 1.2em; color: var(--secondary-color); display: inline-block; margin-top: 10px; margin-left: 10px; }
         .party-actions { margin-top: 15px; display: flex; gap: 10px; }
         .party-actions button, .party-actions a { font-size: 0.8em; padding: 5px 10px; }
 
@@ -182,7 +182,7 @@
                 <span class="icon">+</span> <span class="btn-text">Create Party</span>
             </button>
             
-            <div class="dropdown" style="width: 100%; margin-top: 10px;">
+            <div class="dropdown" style="width: 90%; margin-top: 10px;">
                 <button class="sidebar-btn btn-management" style="width: 100%; text-align: left;">
                     <span class="icon">
                         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -224,13 +224,17 @@
                     <p>Party ID: <strong><?= $group['id'] ?></strong></p>
                     <p>Admin Username: <?= htmlspecialchars($group['admin_username']) ?></p>
                     <p>Duration: <?= ucfirst($group['duration_type']) ?></p>
+                    <p>Allow fallback: <strong><?= !empty($group['allow_fallback']) ? 'Yes' : 'No' ?></strong></p>
+
                     <?php if ($group['duration_type'] === 'limited'): ?>
                         <p>From: <?= date('Y-m-d H:i', strtotime($group['valid_from'])) ?></p>
                         <p>To: <?= date('Y-m-d H:i', strtotime($group['valid_to'])) ?></p>
                     <?php endif; ?>
                     
-                    <p>Admin PIN:</p>
-                    <div class="pin-display"><?= $group['admin_pin'] ?></div>
+                    <p>
+                        Admin PIN:
+                        <span class="pin-display"><?= $group['admin_pin'] ?></span>
+                    </p>
 
                     <div class="party-actions">
                         <button class="btn btn-primary" onclick='showEditModal(<?= json_encode($group) ?>)'>Edit</button>
@@ -263,6 +267,10 @@
                 <div class="checkbox-group">
                     <input type="checkbox" id="unlimited" checked onchange="toggleDurationFields()">
                     <label for="unlimited">Unlimited duration</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="allow_fallback">
+                    <label for="allow_fallback">Allow fallback</label>
                 </div>
                 <div id="durationFields" style="display:none;">
                     <div class="form-group">
@@ -306,6 +314,10 @@
                 <div class="checkbox-group">
                     <input type="checkbox" id="edit_unlimited" onchange="toggleEditDurationFields()">
                     <label for="edit_unlimited">Unlimited duration</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="edit_allow_fallback">
+                    <label for="edit_allow_fallback">Allow fallback</label>
                 </div>
                 <div id="editDurationFields" style="display:none;">
                     <div class="form-group">
@@ -401,7 +413,8 @@
             document.getElementById('edit_admin_username').value = group.admin_username;
             document.getElementById('edit_admin_pin').value = group.admin_pin;
             document.getElementById('edit_unlimited').checked = group.duration_type === 'unlimited';
-            
+            document.getElementById('edit_allow_fallback').checked = !!parseInt(group.allow_fallback);
+
             if (group.valid_from) {
                 document.getElementById('edit_valid_from').value = group.valid_from.replace(' ', 'T').slice(0, 16);
             }
@@ -459,7 +472,8 @@
                 admin_username: document.getElementById('admin_username').value,
                 duration_type: document.getElementById('unlimited').checked ? 'unlimited' : 'limited',
                 valid_from: document.getElementById('valid_from').value,
-                valid_to: document.getElementById('valid_to').value
+                valid_to: document.getElementById('valid_to').value,
+                allow_fallback: document.getElementById('allow_fallback').checked ? 1 : 0
             };
 
             fetch('<?= htmlspecialchars($basePath ?? '') ?>/api/superadmin/create_group', {
@@ -495,7 +509,8 @@
                 admin_pin: document.getElementById('edit_admin_pin').value,
                 duration_type: document.getElementById('edit_unlimited').checked ? 'unlimited' : 'limited',
                 valid_from: document.getElementById('edit_valid_from').value,
-                valid_to: document.getElementById('edit_valid_to').value
+                valid_to: document.getElementById('edit_valid_to').value,
+                allow_fallback: document.getElementById('edit_allow_fallback').checked ? 1 : 0
             };
 
             fetch('<?= htmlspecialchars($basePath ?? '') ?>/api/superadmin/update_group', {
