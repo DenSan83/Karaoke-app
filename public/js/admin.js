@@ -29,6 +29,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const openModalBtn = document.getElementById('openAddModalBtn');
     const closeModalBtn = document.querySelector('.close-modal');
 
+    // List and Clean Modal Elements
+    const listCleanModal = document.getElementById('listCleanModal');
+    const listCleanBtn = document.getElementById('listCleanBtn');
+    const closeListCleanModal = document.getElementById('closeListCleanModal');
+    const cancelListCleanBtn = document.getElementById('cancelListCleanBtn');
+    const executeBtn = document.getElementById('executeBtn');
+    const downloadListCheckbox = document.getElementById('downloadList');
+    const cleanListCheckbox = document.getElementById('cleanList');
+
     // Modal Logic
     if (openModalBtn) {
         openModalBtn.addEventListener('click', () => {
@@ -57,6 +66,86 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             modal.classList.add('hidden');
         }, 300);
+    }
+
+    // List and Clean Modal Logic
+    if (listCleanBtn) {
+        listCleanBtn.addEventListener('click', () => {
+            listCleanModal.classList.remove('hidden');
+            setTimeout(() => {
+                listCleanModal.classList.add('visible');
+            }, 10);
+        });
+    }
+
+    const closeListClean = () => {
+        listCleanModal.classList.remove('visible');
+        setTimeout(() => {
+            listCleanModal.classList.add('hidden');
+        }, 300);
+    };
+
+    if (closeListCleanModal) closeListCleanModal.addEventListener('click', closeListClean);
+    if (cancelListCleanBtn) cancelListCleanBtn.addEventListener('click', closeListClean);
+
+    window.addEventListener('click', (e) => {
+        if (e.target === listCleanModal) {
+            closeListClean();
+        }
+    });
+
+    if (executeBtn) {
+        executeBtn.addEventListener('click', () => {
+            const download = downloadListCheckbox.checked;
+            const clean = cleanListCheckbox.checked;
+
+            if (!download && !clean) {
+                showMessage('Please select at least one option', 'error');
+                return;
+            }
+
+            if (clean) {
+                if (!confirm('Are you sure you want to clear the whole list?')) {
+                    return;
+                }
+            }
+
+            const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/export_clean';
+            
+            if (download) {
+                // To handle download, we can use a hidden form or just window.location
+                const downloadUrl = `${apiUrl}?download=1${clean ? '&clean=1' : ''}`;
+                
+                // If we also need to clean, the server will handle both in one request
+                // and we'll need to refresh the UI after the download starts.
+                window.location.href = downloadUrl;
+                
+                if (clean) {
+                    showMessage('List downloaded and cleared', 'success');
+                    setTimeout(fetchPlaylist, 1000);
+                } else {
+                    showMessage('List download started', 'success');
+                }
+            } else if (clean) {
+                // Just clean
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clean: 1 })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('List cleared', 'success');
+                        fetchPlaylist();
+                    } else {
+                        showMessage('Failed to clear list', 'error');
+                    }
+                });
+            }
+
+            closeListClean();
+        });
     }
 
     let currentActiveIndex = -1;

@@ -221,6 +221,11 @@ switch ($route) {
         $controller->deleteGuest();
         break;
 
+    case 'api/export_clean':
+        $controller = new AdminController($basePath);
+        $controller->exportAndCleanPlaylist();
+        break;
+
     case 'admin/requests':
         $controller = new AdminController($basePath);
         $controller->requests();

@@ -40,6 +40,9 @@
                 <a href="admin/codes" class="submenu-item">
                     <span class="icon">🔑</span> <span class="btn-text">Access Codes</span>
                 </a>
+                <button id="listCleanBtn" class="submenu-item">
+                    <span class="icon">📋</span> <span class="btn-text">List and clean</span>
+                </button>
                 <a href="logout" id="logoutLink" class="submenu-item logout-item">
                     <span class="icon">
                         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -78,6 +81,28 @@
             <input type="text" id="userName" placeholder="User Name" class="form-input">
             <input type="text" id="videoUrl" placeholder="Paste YouTube URL here" class="form-input">
             <button id="addBtn" class="btn-primary">Add to Queue</button>
+        </div>
+    </div>
+</div>
+
+<!-- List and Clean Modal -->
+<div id="listCleanModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-modal" id="closeListCleanModal">&times;</span>
+        <h2>List and clean</h2>
+        <div class="list-clean-form">
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="downloadList" checked> Download list
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="cleanList"> Clean list
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button id="executeBtn" class="btn-primary">Execute</button>
+                <button id="cancelListCleanBtn" class="btn-secondary">Cancel</button>
+            </div>
         </div>
     </div>
 </div>

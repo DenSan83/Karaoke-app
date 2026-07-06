@@ -338,6 +338,109 @@ class AdminController {
         }
     }
 
+    public function exportAndCleanPlaylist() {
+        $download = isset($_GET['download']) && $_GET['download'] == '1';
+        $clean = (isset($_GET['clean']) && $_GET['clean'] == '1') || 
+                 (isset(json_decode(file_get_contents('php://input'), true)['clean']));
+
+        $content = "";
+        $filename = "Playlist.txt";
+
+        if ($download) {
+            require_once 'app/Models/Settings.php';
+            $settings = new Settings($this->groupId);
+            $partyName = $settings->get('party_name', '');
+            
+            if (empty($partyName)) {
+                $partyName = $this->partyName;
+            }
+            
+            if (empty($partyName)) {
+                $partyName = 'Karaoke';
+            }
+            
+            require_once 'app/Models/Playlist.php';
+            $playlistModel = new Playlist($this->groupId);
+            $playlist = json_decode($playlistModel->getAll(), true) ?: [];
+
+            require_once 'app/Models/Guest.php';
+            $guestModel = new Guest($this->groupId);
+            $allGuestsData = $guestModel->getAll();
+            $guests = $allGuestsData['guests'] ?? [];
+
+            $lines = [];
+            
+            // Collect all tracks (playlist + guest pending)
+            $tracks = [];
+            
+            // Add from playlist
+            foreach ($playlist as $track) {
+                $tracks[] = [
+                    'title' => $track['title'] ?? 'Unknown',
+                    'user' => $track['user'] ?? 'Admin',
+                    'url' => 'https://www.youtube.com/watch?v=' . ($track['id'] ?? ''),
+                    'added_at' => $track['added_at'] ?? 0
+                ];
+            }
+            
+            // Add from guests (if not already in tracks - simplified check by title and user)
+            foreach ($guests as $guest) {
+                if (isset($guest['songs']) && is_array($guest['songs'])) {
+                    foreach ($guest['songs'] as $song) {
+                        $alreadyIn = false;
+                        foreach ($tracks as $t) {
+                            if ($t['title'] === $song['title'] && $t['user'] === $guest['name']) {
+                                $alreadyIn = true;
+                                break;
+                            }
+                        }
+                        if (!$alreadyIn) {
+                            $tracks[] = [
+                                'title' => $song['title'] ?? 'Unknown',
+                                'user' => $guest['name'],
+                                'url' => 'https://www.youtube.com/watch?v=' . ($song['id'] ?? ''),
+                                'added_at' => $song['added_at'] ?? 0
+                            ];
+                        }
+                    }
+                }
+            }
+            
+            // Sort by added_at
+            usort($tracks, function($a, $b) {
+                return $a['added_at'] - $b['added_at'];
+            });
+
+            foreach ($tracks as $track) {
+                $lines[] = "- " . ($track['title']) . " (" . ($track['user']) . ") - " . ($track['url']);
+            }
+
+            $content = implode("\r\n", $lines);
+            $dateStr = date('Y-m-d');
+            $filename = "$partyName ($dateStr).txt";
+        }
+
+        if ($clean) {
+            $db = Database::getInstance();
+            // Clear playlist
+            $db->query("DELETE FROM `playlist` WHERE group_id = ?", [$this->groupId]);
+            // Clear guest songs
+            $db->query("UPDATE `guests` SET songs = '[]' WHERE group_id = ?", [$this->groupId]);
+        }
+
+        if ($download) {
+            header('Content-Type: text/plain; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . strlen($content));
+            echo $content;
+            exit;
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+            exit;
+        }
+    }
+
     public function downloadTracksList() {
         require_once 'app/Models/Guest.php';
         $guestModel = new Guest($this->groupId);
@@ -408,7 +511,7 @@ class AdminController {
         }
 
         $content = implode("\r\n", $lines);
-        $filename = "song_list_" . date('Y-m-d') . ".txt";
+        $filename = "song_list_" . $this->partyName . "_" . date('Y-m-d') . ".txt";
 
         header('Content-Type: text/plain; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
