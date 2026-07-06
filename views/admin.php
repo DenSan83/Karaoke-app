@@ -40,6 +40,9 @@
                 <a href="admin/codes" class="submenu-item">
                     <span class="icon">🔑</span> <span class="btn-text">Access Codes</span>
                 </a>
+                <button id="pairScreenBtn" class="submenu-item">
+                    <span class="icon">📺</span> <span class="btn-text">Pair to Screen</span>
+                </button>
                 <button id="listCleanBtn" class="submenu-item">
                     <span class="icon">📋</span> <span class="btn-text">List and clean</span>
                 </button>
@@ -81,6 +84,19 @@
             <input type="text" id="userName" placeholder="User Name" class="form-input">
             <input type="text" id="videoUrl" placeholder="Paste YouTube URL here" class="form-input">
             <button id="addBtn" class="btn-primary">Add to Queue</button>
+        </div>
+    </div>
+</div>
+
+<!-- Pair to Screen Modal -->
+<div id="pairScreenModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-modal" id="closePairScreenModal">&times;</span>
+        <h2>Pair to Screen</h2>
+        <div class="add-video-form">
+            <p style="margin:0 0 12px;color:#aaa;font-size:0.9rem;">Enter the 6-digit code displayed on the screen.</p>
+            <input type="text" id="screenCodeInput" placeholder="e.g. 123456" maxlength="6" class="form-input" inputmode="numeric" pattern="\d{6}">
+            <button id="pairScreenSubmitBtn" class="btn-primary">Pair Screen</button>
         </div>
     </div>
 </div>

@@ -155,6 +155,48 @@ h1 {
     display: none !important;
 }
 
+/* Pairing code block (inside the welcome overlay) */
+#pairing-overlay {
+    margin-top: 28px;
+}
+
+#pairing-code-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+#screen-code-display {
+    font-size: 3.5rem;
+    font-weight: bold;
+    letter-spacing: 0.35em;
+    color: var(--primary-color);
+    font-family: 'Courier New', monospace;
+}
+
+/* Countdown circle */
+#code-timer {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    transform: rotate(-90deg);
+}
+
+.timer-track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 3;
+}
+
+.timer-arc {
+    fill: none;
+    stroke: #4fc3f7;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1s linear, stroke-dashoffset 1s linear, stroke 0.4s;
+}
+
 /* Animated Background */
 #animation-background {
     position: fixed;

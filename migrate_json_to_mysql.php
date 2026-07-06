@@ -98,6 +98,16 @@ function runMigration() {
             state VARCHAR(50),
             state_timestamp DOUBLE,
             last_updated DOUBLE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+        'screens' => "CREATE TABLE IF NOT EXISTS `screens` (
+            secret_id VARCHAR(36) PRIMARY KEY,
+            public_code VARCHAR(6) NULL,
+            group_id VARCHAR(10) NULL,
+            created_at INT NOT NULL,
+            paired_at INT NULL,
+            UNIQUE KEY (public_code),
+            INDEX (group_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
     ];
 

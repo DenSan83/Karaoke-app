@@ -29,6 +29,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const openModalBtn = document.getElementById('openAddModalBtn');
     const closeModalBtn = document.querySelector('.close-modal');
 
+    // Pair to Screen Modal Elements
+    const pairScreenModal = document.getElementById('pairScreenModal');
+    const pairScreenBtn = document.getElementById('pairScreenBtn');
+    const closePairScreenModal = document.getElementById('closePairScreenModal');
+    const pairScreenSubmitBtn = document.getElementById('pairScreenSubmitBtn');
+    const screenCodeInput = document.getElementById('screenCodeInput');
+
+    const openPairScreenModal = () => {
+        pairScreenModal.classList.remove('hidden');
+        setTimeout(() => {
+            pairScreenModal.classList.add('visible');
+            screenCodeInput.value = '';
+            screenCodeInput.focus();
+        }, 10);
+    };
+
+    const closePairScreen = () => {
+        pairScreenModal.classList.remove('visible');
+        setTimeout(() => pairScreenModal.classList.add('hidden'), 300);
+    };
+
+    if (pairScreenBtn) pairScreenBtn.addEventListener('click', openPairScreenModal);
+    if (closePairScreenModal) closePairScreenModal.addEventListener('click', closePairScreen);
+
+    window.addEventListener('click', (e) => {
+        if (e.target === pairScreenModal) closePairScreen();
+    });
+
+    if (pairScreenSubmitBtn) {
+        pairScreenSubmitBtn.addEventListener('click', async () => {
+            const code = (screenCodeInput.value || '').trim();
+            if (!/^\d{6}$/.test(code)) {
+                showMessage('Please enter a valid 6-digit code.', 'error');
+                return;
+            }
+            const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/pair_screen';
+            try {
+                const resp = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showMessage('Screen paired successfully!', 'success');
+                    closePairScreen();
+                } else {
+                    showMessage(data.error || 'Failed to pair screen.', 'error');
+                }
+            } catch (e) {
+                showMessage('Network error. Please try again.', 'error');
+            }
+        });
+    }
+
     // List and Clean Modal Elements
     const listCleanModal = document.getElementById('listCleanModal');
     const listCleanBtn = document.getElementById('listCleanBtn');

@@ -88,22 +88,6 @@ if (isset($_SESSION['group_id']) && !isset($_SESSION['is_superadmin'])) {
 // }
 
 // Simple router
-if (strpos($route, 'screen/') === 0) {
-    $parts = explode('/', $route);
-    $groupId = $parts[1] ?? null;
-
-    // Sanitize group ID to avoid issues with following paths
-    if ($groupId && strpos($groupId, '?') !== false) {
-        $groupId = explode('?', $groupId)[0];
-    }
-
-    // If it's an API call or public file, don't treat it as a screen route
-    if ($groupId !== 'api' && $groupId !== 'public') {
-        $controller = new PlayerController();
-        $controller->index($groupId, $basePath);
-        exit;
-    }
-}
 
 switch ($route) {
     case '/':
@@ -114,21 +98,8 @@ switch ($route) {
         break;
 
     case 'screen':
-        require_once 'app/Models/Group.php';
-        $groupModel = new Group();
-        $allGroups = $groupModel->getAll();
-        $activeGroups = array_filter($allGroups, function($g) use ($groupModel) {
-            return $groupModel->isValid($g);
-        });
-
-        if (count($activeGroups) === 1) {
-            $onlyGroup = reset($activeGroups);
-            header('Location: ' . ($basePath ?: '') . '/screen/' . $onlyGroup['id']);
-            exit;
-        }
-
         $controller = new PlayerController();
-        $controller->index(null, $basePath);
+        $controller->index($basePath);
         break;
     
     case 'superadmin':
@@ -394,6 +365,21 @@ switch ($route) {
     case 'api/refuse_request':
         $controller = new ApiController();
         $controller->refuseRequest();
+        break;
+
+    case 'api/register_screen':
+        $controller = new ApiController();
+        $controller->registerScreen();
+        break;
+
+    case 'api/screen_pair_status':
+        $controller = new ApiController();
+        $controller->screenPairStatus();
+        break;
+
+    case 'api/pair_screen':
+        $controller = new ApiController();
+        $controller->pairScreen();
         break;
 
     case 'api/search_songs':

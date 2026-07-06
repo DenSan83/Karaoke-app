@@ -26,11 +26,18 @@
 </div>
 
 <div id="overlay-message">
-    <?php if (!empty($groupName)): ?>
-        <h2 id="party-name"><?= htmlspecialchars($groupName) ?></h2>
-    <?php endif; ?>
+    <h2 id="party-name" class="hidden"></h2>
     <h1>Welcome to my Karaoke app!</h1>
     <p>Have you joined the party?</p>
+    <div id="pairing-overlay">
+        <div id="pairing-code-row">
+            <div id="screen-code-display">------</div>
+            <svg id="code-timer" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                <circle class="timer-track" cx="18" cy="18" r="15.9"/>
+                <circle id="timer-arc" class="timer-arc" cx="18" cy="18" r="15.9"/>
+            </svg>
+        </div>
+    </div>
 </div>
 
 <div id="next-song-overlay" class="hidden">
@@ -45,7 +52,6 @@
 
 <script>
     const BASE_PATH = <?= json_encode($basePath) ?>;
-    const GROUP_ID = <?= json_encode($groupId) ?>;
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script src="public/js/player.js"></script>

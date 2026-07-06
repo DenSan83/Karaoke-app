@@ -320,6 +320,68 @@ class ApiController {
         echo json_encode($finalRequests);
     }
 
+    public function registerScreen() {
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        $secretId   = $data['secret_id']   ?? '';
+        $publicCode = $data['public_code'] ?? '';
+        if (empty($secretId) || !preg_match('/^\d{6}$/', $publicCode)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid parameters']);
+            return;
+        }
+        require_once 'app/Models/Screen.php';
+        $screenModel = new Screen();
+        $screenModel->register($secretId, $publicCode);
+        echo json_encode(['success' => true]);
+    }
+
+    public function screenPairStatus() {
+        header('Content-Type: application/json');
+        $secretId = $_GET['secret_id'] ?? '';
+        if (empty($secretId)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing secret_id']);
+            return;
+        }
+        require_once 'app/Models/Screen.php';
+        $screenModel = new Screen();
+        $row = $screenModel->getPairingBySecret($secretId);
+        if ($row && !empty($row['group_id'])) {
+            require_once 'app/Models/Group.php';
+            $groupModel = new Group();
+            $group = $groupModel->getById($row['group_id']);
+            echo json_encode([
+                'paired'     => true,
+                'group_id'   => $row['group_id'],
+                'group_name' => $group['name'] ?? '',
+            ]);
+        } else {
+            echo json_encode(['paired' => false]);
+        }
+    }
+
+    public function pairScreen() {
+        if (!$this->checkAuth()) return;
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        $publicCode = $data['code'] ?? '';
+        if (!preg_match('/^\d{6}$/', $publicCode)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid screen code']);
+            return;
+        }
+        require_once 'app/Models/Screen.php';
+        $screenModel = new Screen();
+        $result = $screenModel->pairByPublicCode($publicCode, $this->groupId);
+        if ($result !== false) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Screen code not found. Make sure the screen is open and the code is current.']);
+        }
+    }
+
     public function refuseRequest() {
         if (!$this->checkAuth()) return;
         header('Content-Type: application/json');
