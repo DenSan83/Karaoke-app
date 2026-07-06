@@ -39,7 +39,25 @@ class ApiController {
         $data = json_decode(file_get_contents('php://input'), true);
         $url = $data['url'] ?? '';
         $user = $data['user'] ?? '';
-        
+
+        // Enforce allow_fallback setting: if disabled, reject non-embeddable videos
+        if ($this->groupId) {
+            require_once 'app/Services/YouTubeService.php';
+            require_once 'app/Models/Group.php';
+            $ytService = new YouTubeService();
+            $videoId = $ytService->extractVideoId($url);
+            if ($videoId && !$ytService->isEmbeddable($videoId)) {
+                $groupModel = new Group();
+                $group = $groupModel->getById($this->groupId);
+                $fallbackAllowed = !empty($group['allow_fallback']);
+                if (!$fallbackAllowed) {
+                    http_response_code(422);
+                    echo json_encode(['success' => false, 'error' => 'YouTube restricts embedding of this video. Please find a different version and try again.']);
+                    return;
+                }
+            }
+        }
+
         $result = $this->playlistModel->add($url, $user);
         
         if (isset($result['error'])) {

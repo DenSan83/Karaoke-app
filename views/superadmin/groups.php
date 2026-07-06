@@ -93,7 +93,6 @@
                     </p>
 
                     <div class="party-actions">
-                        <a href="<?= htmlspecialchars($basePath ?? '') ?>/screen/<?= $group['id'] ?>" target="_blank" class="btn btn-primary" style="background:var(--secondary-color); color:#000;">Screen</a>
                     </div>
                 </div>
             <?php endforeach; ?>
