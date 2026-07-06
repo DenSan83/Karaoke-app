@@ -29,11 +29,71 @@
         
         .party-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .party-card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-left: 5px solid var(--primary-color); position: relative; }
-        .party-card h3 { margin: 0 0 10px 0; color: var(--primary-color); }
+        .party-card h3 { margin: 0 0 10px 0; padding-right: 30px; color: var(--primary-color); }
         .party-card p { margin: 5px 0; color: var(--text-color); opacity: 0.8; font-size: 0.9em; }
         .pin-display { background: #2c2c2c; padding: 5px 10px; border-radius: 4px; border: 1px dashed #444; font-family: monospace; font-size: 1.2em; color: var(--secondary-color); display: inline-block; margin-top: 10px; margin-left: 10px; }
         .party-actions { margin-top: 15px; display: flex; gap: 10px; }
         .party-actions button, .party-actions a { font-size: 0.8em; padding: 5px 10px; }
+
+        /* Kebab Menu Styles */
+        .kebab-menu {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+        }
+        .kebab-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .kebab-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .kebab-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 100;
+            min-width: 120px;
+        }
+        .kebab-dropdown.show {
+            display: block;
+        }
+        .kebab-dropdown a, .kebab-dropdown button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 15px;
+            color: var(--text-color);
+            text-decoration: none;
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .kebab-dropdown a:hover, .kebab-dropdown button:hover {
+            background: #333;
+            color: var(--primary-color);
+        }
+        .kebab-dropdown .delete-option {
+            color: var(--error-color);
+        }
+        .kebab-dropdown .delete-option:hover {
+            background: rgba(207, 102, 121, 0.1);
+            color: var(--error-color);
+        }
 
         /* Modal styling */
         .modal { 
@@ -220,6 +280,14 @@
                 <div class="party-grid" id="groups-list">
             <?php foreach (($groups ?? []) as $group): ?>
                 <div class="party-card">
+                    <div class="kebab-menu">
+                        <button class="kebab-btn" onclick="toggleKebab(event, '<?= $group['id'] ?>')">⋮</button>
+                        <div id="dropdown-<?= $group['id'] ?>" class="kebab-dropdown">
+                            <a href="<?= htmlspecialchars($basePath ?? '') ?>/admin?group_id=<?= $group['id'] ?>">Manage</a>
+                            <button onclick='showEditModal(<?= json_encode($group) ?>)'>Edit</button>
+                            <button class="delete-option" onclick="deleteGroup('<?= $group['id'] ?>')">Delete</button>
+                        </div>
+                    </div>
                     <h3><?= htmlspecialchars($group['name']) ?></h3>
                     <p>Party ID: <strong><?= $group['id'] ?></strong></p>
                     <p>Admin Username: <?= htmlspecialchars($group['admin_username']) ?></p>
@@ -237,9 +305,6 @@
                     </p>
 
                     <div class="party-actions">
-                        <button class="btn btn-primary" onclick='showEditModal(<?= json_encode($group) ?>)'>Edit</button>
-                        <button class="btn btn-danger" onclick="deleteGroup('<?= $group['id'] ?>')">Delete</button>
-                        <a href="<?= htmlspecialchars($basePath ?? '') ?>/admin?group_id=<?= $group['id'] ?>" class="btn btn-primary" style="background:var(--primary-color); color:#000;">Manage</a>
                         <a href="<?= htmlspecialchars($basePath ?? '') ?>/screen/<?= $group['id'] ?>" target="_blank" class="btn btn-primary" style="background:var(--secondary-color); color:#000;">Screen</a>
                     </div>
                 </div>
@@ -339,6 +404,25 @@
 
     <script>
         // Hamburger Menu Toggle
+        function toggleKebab(event, id) {
+            event.stopPropagation();
+            const dropdown = document.getElementById(`dropdown-${id}`);
+            const allDropdowns = document.querySelectorAll('.kebab-dropdown');
+            
+            allDropdowns.forEach(d => {
+                if (d !== dropdown) d.classList.remove('show');
+            });
+            
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdowns when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.kebab-menu')) {
+                document.querySelectorAll('.kebab-dropdown').forEach(d => d.classList.remove('show'));
+            }
+        });
+
         const hamburgerBtn = document.getElementById('hamburgerBtn');
         const sidebar = document.getElementById('sidebar');
 
