@@ -85,6 +85,9 @@ body {
     z-index: 100;
 }
 
+.justify-left-sidebar {
+    width: 90%;
+}
 .sidebar-btn {
     box-sizing: border-box;
     /* Crucial for matching button and anchor widths */
@@ -92,7 +95,6 @@ body {
     color: #000;
     border: none;
     border-radius: 8px;
-    width: 90%;
     height: 50px;
     display: flex;
     flex-direction: row;
@@ -648,8 +650,18 @@ button:active {
         border-top: 1px solid #333;
     }
 
+    .justify-left-sidebar {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        width: auto;
+    }
+    .justify-left-sidebar button {
+        margin-right: 10px;
+    }
+
     .sidebar-btn {
-        width: 100%;
+        width: 50px !important;
         max-width: 150px;
         height: 50px;
         flex-direction: row;
@@ -665,6 +677,7 @@ button:active {
         border-radius: 8px;
     }
 
+    #openAddModalBtn .btn-text,
     .reorder-btn .btn-text,
     #optionsBtn .btn-text {
         display: none;
@@ -827,8 +840,16 @@ button:active {
 @media (min-width: 769px) {
     .sidebar-options-container {
         position: relative;
-        width: 100%;
+        width: 90%;
         margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .requests-btn {
+        width: 100%;
+        background-color: #4fc3f7;
     }
 
     .sidebar-submenu {
@@ -843,9 +864,25 @@ button:active {
 /* Specific Mobile Styles (Sidebar is at bottom) */
 @media (max-width: 768px) {
     .sidebar-options-container {
-        width: 50px;
-        min-width: 50px;
+        width: auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
         position: relative;
+    }
+
+    .requests-btn {
+        width: 50px !important;
+        min-width: 50px;
+        padding: 0 !important;
+        margin-top: 0 !important;
+        border-radius: 8px;
+        background-color: #4fc3f7;
+    }
+
+    .requests-btn .btn-text {
+        display: none;
     }
 
     .sidebar-submenu {

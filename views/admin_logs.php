@@ -35,7 +35,6 @@
                                     <tr>
                                         <th>Time</th>
                                         <th>Guest Name</th>
-                                        <th>Category</th>
                                         <th>Code Used</th>
                                         <th>Actions</th>
                                     </tr>
@@ -49,7 +48,6 @@
                                         <tr>
                                             <td class="log-time"><?= date('H:i:s', $timestamp) ?><br><small><?= date('d M', $timestamp) ?></small></td>
                                             <td class="log-name"><?= htmlspecialchars($data['name']) ?></td>
-                                            <td><span class="badge badge-<?= str_replace(' ', '-', strtolower($data['category'] ?? 'in-person')) ?>"><?= htmlspecialchars($data['category'] ?? 'In Person') ?></span></td>
                                             <td class="log-code"><code><?= htmlspecialchars($data['code'] ?? '-') ?></code></td>
                                             <td>
                                                 <?php if ($guestId): ?>
@@ -90,7 +88,6 @@
                                             <td class="track-title"><?= htmlspecialchars($track['title']) ?></td>
                                             <td class="track-user">
                                                 <strong><?= htmlspecialchars($track['userName']) ?></strong>
-                                                <br><small><?= htmlspecialchars($track['category']) ?></small>
                                             </td>
                                             <td class="log-time"><?= date('H:i:s', $track['added_at']) ?></td>
                                         </tr>

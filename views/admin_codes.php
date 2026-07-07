@@ -30,23 +30,18 @@
             </div>
 
             <div class="codes-card">
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Manage active codes for guests at the venue.</p>
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Manage the active code for guests at the venue.</p>
                 
                 <div id="qrcode-section" class="qrcode-section hidden">
                     <div id="qrcode" class="qrcode-wrapper"></div>
                     <p class="qrcode-hint">Scan to join the party automatically</p>
                 </div>
 
-                <ul id="code-list" class="code-list">
-                    <!-- Items injected via JS -->
-                </ul>
-
                 <div class="add-form">
-                    <input type="text" id="new-code" class="new-code-input" placeholder="Enter new code (e.g. PARTY2026)">
-                    <button id="add-code-btn" class="add-btn" title="Add Code">+</button>
+                    <input type="text" id="guest-code" class="new-code-input" placeholder="Enter code (e.g. PARTY2026)" value="<?= htmlspecialchars($guestCodes[0] ?? '') ?>">
                 </div>
 
-                <button id="save-btn" class="save-btn">Save In-Person Codes</button>
+                <button id="save-btn" class="save-btn">Save Code</button>
                 <div id="msg" class="msg"></div>
             </div>
         </main>

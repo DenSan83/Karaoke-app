@@ -203,7 +203,6 @@ class WelcomeController {
             if (in_array($code, $guestCodes)) {
                 $isValid = true;
                 $_SESSION['used_code'] = $code;
-                $_SESSION['user_category'] = 'in person';
             }
         }
 
@@ -214,7 +213,6 @@ class WelcomeController {
                 $isValid = true;
                 $isHotelJoin = true;
                 $_SESSION['used_code'] = $code;
-                $_SESSION['user_category'] = 'hotel';
             }
         }
 
@@ -228,7 +226,6 @@ class WelcomeController {
                 $isDistantInvite = true;
                 $distantName = $decrypted['name'];
                 $_SESSION['used_code'] = $code;
-                $_SESSION['user_category'] = 'distant';
 
                 // AUTO-REGISTER AND LOGIN
                 $result = $this->guestModel->add($decrypted['name']);

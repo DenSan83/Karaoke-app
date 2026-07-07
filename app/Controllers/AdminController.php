@@ -105,7 +105,6 @@ class AdminController {
                     'guestId' => $g['id'],
                     'name' => $g['name'],
                     'code' => 'Active', // Changed from "History" to "Active"
-                    'category' => 'in person',
                     'timestamp' => $g['created_at'] ?? time()
                 ];
                 $this->sysLog->log('user_login', $entryData);
@@ -122,26 +121,11 @@ class AdminController {
         $this->playlistModel = new Playlist($this->groupId);
         $playlistData = json_decode($this->playlistModel->getAll(), true) ?: [];
         
-        // Helper to find category by name
-        $findCategory = function($name) use ($allGuests, $userLogs) {
-            // 1. Try current guests
-            foreach ($allGuests as $g) {
-                if ($g['name'] === $name) return $g['category'] ?? 'in person';
-            }
-            // 2. Try historical logs
-            foreach ($userLogs as $l) {
-                if (($l['data']['name'] ?? '') === $name) return $l['data']['category'] ?? 'in person';
-            }
-            // 3. Fallback for admin or unknown
-            return 'admin';
-        };
-
         foreach ($playlistData as $track) {
             $user = $track['user'] ?? 'Admin';
             $trackLogs[] = [
                 'title' => $track['title'] ?? 'Unknown',
                 'userName' => $user,
-                'category' => $findCategory($user),
                 'added_at' => $track['added_at'] ?? time(),
                 'status' => 'Queued'
             ];
@@ -158,7 +142,6 @@ class AdminController {
                     $trackLogs[] = [
                         'title' => $song['title'] ?? 'Unknown',
                         'userName' => $g['name'],
-                        'category' => $g['category'] ?? 'in person',
                         'added_at' => $song['added_at'] ?? time(),
                         'status' => $song['status'] ?? 'Waiting'
                     ];
@@ -206,17 +189,16 @@ class AdminController {
             // Check legacy code or default to TODAY26
             $default = $legacyCode ? $legacyCode : 'TODAY26';
             $guestCodes = [$default];
-            
-            // Should we save this state immediately or just show it? 
-            // Just showing it lets the user decide.
         }
         
-        // Ensure it's an array
+        // Ensure it's an array and only keep first element for single code mode
         if (!is_array($guestCodes)) {
              $guestCodes = [];
         }
+        if (count($guestCodes) > 1) {
+            $guestCodes = [reset($guestCodes)];
+        }
 
-        $hotelCode = $settings->get('hotel_code');
         $allowNewSessions = $settings->get('allow_new_sessions', true);
 
         $data = [
@@ -459,19 +441,11 @@ class AdminController {
         $lines = [];
         $lines[] = "KARAOKE SONG LIST - " . date('Y-m-d H:i:s');
         $lines[] = "--------------------------------------------------";
-        $lines[] = str_pad("#", 5) . str_pad("TITLE", 50) . str_pad("USER", 20) . "GROUP";
+        $lines[] = str_pad("#", 5) . str_pad("TITLE", 50) . "USER";
         $lines[] = "--------------------------------------------------";
 
         $tracks = [];
         $addedPairs = [];
-
-        // Helper to find category by name (simpler version for export)
-        $findCategory = function($name) use ($allGuests) {
-            foreach ($allGuests as $g) {
-                if ($g['name'] === $name) return $g['category'] ?? 'in person';
-            }
-            return 'admin';
-        };
 
         // A. Add from active playlist
         foreach ($playlistData as $track) {
@@ -479,7 +453,6 @@ class AdminController {
             $tracks[] = [
                 'title' => $track['title'] ?? 'Unknown',
                 'userName' => $user,
-                'category' => $findCategory($user),
                 'added_at' => $track['added_at'] ?? time()
             ];
             $addedPairs[] = ($track['id'] ?? '') . $user;
@@ -495,7 +468,6 @@ class AdminController {
                     $tracks[] = [
                         'title' => $song['title'] ?? 'Unknown',
                         'userName' => $g['name'],
-                        'category' => $g['category'] ?? 'in person',
                         'added_at' => $song['added_at'] ?? time()
                     ];
                 }
@@ -511,8 +483,7 @@ class AdminController {
             $num = $index + 1;
             $lines[] = str_pad($num, 5) . 
                        str_pad(mb_strimwidth($t['title'], 0, 48, "..."), 50) . 
-                       str_pad(mb_strimwidth($t['userName'], 0, 18, "..."), 20) . 
-                       $t['category'];
+                       str_pad(mb_strimwidth($t['userName'], 0, 18, "..."), 20);
         }
 
         $content = implode("\r\n", $lines);

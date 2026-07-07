@@ -26,17 +26,19 @@
 
 <div class="layout">
     <aside class="sidebar">
-        <button id="openAddModalBtn" class="sidebar-btn">
-            <span class="icon">+</span> Add
-        </button>
-        <button id="reorderBtn" class="sidebar-btn reorder-btn">
-            <span class="icon">⇄</span> <span class="btn-text">Reorder</span>
-        </button>
+        <div class="justify-left-sidebar">
+            <button id="openAddModalBtn" class="sidebar-btn">
+                <span class="icon">+</span> <span class="btn-text">Add</span>
+            </button>
+            <button id="reorderBtn" class="sidebar-btn reorder-btn">
+                <span class="icon">⇄</span> <span class="btn-text">Reorder</span>
+            </button>
+        </div>
         <div class="sidebar-options-container">
+            <a href="admin/requests" class="sidebar-btn requests-btn">
+                <span class="icon">🎵</span> <span class="btn-text">Requests</span>
+            </a>
             <div id="optionsSubmenu" class="sidebar-submenu hidden">
-                <a href="admin/requests" class="submenu-item">
-                    <span class="icon">🎵</span> <span class="btn-text">Requests</span>
-                </a>
                 <a href="admin/codes" class="submenu-item">
                     <span class="icon">🔑</span> <span class="btn-text">Access Codes</span>
                 </a>

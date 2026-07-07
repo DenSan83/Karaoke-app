@@ -1,43 +1,19 @@
-let initialCodes = [];
-let qr = null;
-
-// Render List
-function renderCodes() {
-    const list = document.getElementById('code-list');
-    if (!list) return;
-
-    list.innerHTML = '';
-
-    if (window.currentCodes.length === 0) {
-        list.innerHTML = '<li style="color: #666; text-align: center; padding: 10px;">No active codes</li>';
-    } else {
-        window.currentCodes.forEach((code, index) => {
-            const li = document.createElement('li');
-            li.className = 'code-item';
-            li.innerHTML = `
-                <span class="code-display">${escapeHtml(code)}</span>
-                <button class="remove-btn" title="Remove Code" onclick="removeCode(${index})">🗑</button>
-            `;
-            list.appendChild(li);
-        });
-    }
-
-    checkChanges();
-    updateQRCode();
-}
+let initialCode = '';
 
 function updateQRCode() {
     const section = document.getElementById('qrcode-section');
     const container = document.getElementById('qrcode');
-    if (!section || !container) return;
+    const input = document.getElementById('guest-code');
+    if (!section || !container || !input) return;
 
-    if (window.currentCodes.length === 0) {
+    const code = input.value.trim();
+
+    if (!code) {
         section.classList.add('hidden');
         return;
     }
 
     section.classList.remove('hidden');
-    const firstCode = window.currentCodes[0];
 
     // Create base URL (strip /admin/codes)
     let baseUrl = window.location.origin + window.location.pathname.split('/admin')[0];
@@ -46,7 +22,7 @@ function updateQRCode() {
         baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname.split('/admin')[0];
     }
     const groupId = window.groupId || '';
-    const joinUrl = `${baseUrl}/?c=${encodeURIComponent(firstCode)}&g=${encodeURIComponent(groupId)}`;
+    const joinUrl = `${baseUrl}/?c=${encodeURIComponent(code)}&g=${encodeURIComponent(groupId)}`;
     console.log("Generating QR for:", joinUrl);
 
     try {
@@ -111,32 +87,13 @@ function updateQRCode() {
     }
 }
 
-function removeCode(index) {
-    window.currentCodes.splice(index, 1);
-    renderCodes();
-}
-
 function checkChanges() {
     const saveBtn = document.getElementById('save-btn');
-    if (!saveBtn) return;
+    const input = document.getElementById('guest-code');
+    if (!saveBtn || !input) return;
 
-    const hasChanges = JSON.stringify([...window.currentCodes].sort()) !== JSON.stringify([...initialCodes].sort());
+    const hasChanges = input.value.trim() !== initialCode;
     saveBtn.disabled = !hasChanges;
-}
-
-function addCode() {
-    const input = document.getElementById('new-code');
-    const code = input.value.trim();
-    if (code) {
-        // Determine if duplicate
-        if (!window.currentCodes.includes(code)) {
-            window.currentCodes.push(code);
-            renderCodes();
-            input.value = '';
-        } else {
-            alert('Code already exists in the list.');
-        }
-    }
 }
 
 // Escape helper
@@ -147,20 +104,17 @@ function escapeHtml(text) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Save initial state
-    initialCodes = [...window.currentCodes];
-
-    // Event Listeners
-    const addBtn = document.getElementById('add-code-btn');
-    const newInput = document.getElementById('new-code');
+    const guestCodeInput = document.getElementById('guest-code');
     const saveBtn = document.getElementById('save-btn');
     const sessionToggle = document.getElementById('session-toggle');
     const sessionStatusText = document.getElementById('session-status-text');
 
-    if (addBtn) addBtn.addEventListener('click', addCode);
-    if (newInput) {
-        newInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addCode();
+    // Save initial state
+    if (guestCodeInput) {
+        initialCode = guestCodeInput.value.trim();
+        guestCodeInput.addEventListener('input', () => {
+            checkChanges();
+            updateQRCode();
         });
     }
 
@@ -197,9 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
             const msg = document.getElementById('msg');
+            const code = guestCodeInput.value.trim();
 
-            if (window.currentCodes.length === 0) {
-                if (!confirm('Are you sure you want to save an EMPTY list? No one will be able to join.')) return;
+            if (!code) {
+                if (!confirm('Are you sure you want to save an EMPTY code? No one will be able to join.')) return;
             }
 
             saveBtn.disabled = true;
@@ -210,18 +165,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch('api/update_code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ codes: window.currentCodes })
+                    body: JSON.stringify({ codes: [code] })
                 });
                 const data = await res.json();
 
                 if (data.success) {
-                    msg.textContent = 'Codes saved successfully!';
+                    msg.textContent = 'Code saved successfully!';
                     msg.className = 'msg success';
 
                     // Update initial state after successful save
-                    initialCodes = [...window.currentCodes];
+                    initialCode = code;
                 } else {
-                    msg.textContent = data.error || 'Failed to save codes';
+                    msg.textContent = data.error || 'Failed to save code';
                     msg.className = 'msg error';
                 }
 
@@ -236,12 +191,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 msg.className = 'msg error';
             } finally {
                 saveBtn.disabled = false;
-                saveBtn.textContent = 'Save In-Person Codes';
-                checkChanges(); // Re-verify in case of failure or state update
+                saveBtn.textContent = 'Save Code';
+                checkChanges(); 
             }
         });
     }
 
     // Initial Render
-    renderCodes();
+    updateQRCode();
+    checkChanges();
 });
