@@ -34,9 +34,14 @@ class AdminController {
     }
 
     public function index() {
+        require_once 'app/Models/Group.php';
+        $groupModel = new Group();
+        $group = $groupModel->getById($this->groupId);
+        
         $data = [
             'basePath' => $this->basePath,
-            'partyName' => $this->partyName
+            'partyName' => $this->partyName,
+            'group' => $group
         ];
         extract($data);
         require_once 'views/admin.php';

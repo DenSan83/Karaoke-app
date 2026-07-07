@@ -404,16 +404,63 @@ class WelcomeController {
             }
         }
         
-        // CHECK FOR "KARAOKE" KEYWORD
+        // CHECK FOR WORD FILTERS
         $isForced = (bool)($data['force'] ?? false);
-        if (!$isForced && stripos($title, 'karaoke') === false) {
-            echo json_encode([
-                'success' => false, 
-                'needsConfirmation' => true,
-                'title' => $title,
-                'videoId' => $videoId
-            ]);
-            return;
+        if (!$isForced && $this->groupId) {
+            require_once 'app/Models/Group.php';
+            $groupModel = new Group();
+            $group = $groupModel->getById($this->groupId);
+
+            if ($group) {
+                $mustHaveRaw = $group['must_have_words'] ?? '';
+                $mustNotHaveRaw = $group['must_not_have_words'] ?? '';
+
+                $needsConfirmation = false;
+                $failedWord = "";
+                $filterType = ""; // 'must_have' or 'must_not_have'
+
+                // Check Must Have Words
+                if (!empty(trim($mustHaveRaw))) {
+                    $mustHaveWords = array_map('trim', explode(',', $mustHaveRaw));
+                    $found = false;
+                    foreach ($mustHaveWords as $word) {
+                        if (!empty($word) && stripos($title, $word) !== false) {
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $needsConfirmation = true;
+                        $filterType = 'must_have';
+                        $failedWord = str_replace(',', ', ', $mustHaveRaw); // For 'must_have', show all required words nicely formatted
+                    }
+                }
+
+                // Check Must Not Have Words
+                if (!$needsConfirmation && !empty(trim($mustNotHaveRaw))) {
+                    $mustNotHaveWords = array_map('trim', explode(',', $mustNotHaveRaw));
+                    foreach ($mustNotHaveWords as $word) {
+                        if (!empty($word) && stripos($title, $word) !== false) {
+                            $needsConfirmation = true;
+                            $filterType = 'must_not_have';
+                            $failedWord = $word;
+                            break;
+                        }
+                    }
+                }
+
+                if ($needsConfirmation) {
+                    echo json_encode([
+                        'success' => false, 
+                        'needsConfirmation' => true,
+                        'filterType' => $filterType,
+                        'failedWord' => $failedWord,
+                        'title' => $title,
+                        'videoId' => $videoId
+                    ]);
+                    return;
+                }
+            }
         }
         
         $songData = [

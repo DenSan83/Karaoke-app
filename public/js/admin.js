@@ -203,6 +203,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Word Filter Modal Logic
+    const wordFilterModal = document.getElementById('wordFilterModal');
+    const wordFilterBtn = document.getElementById('wordFilterBtn');
+    const closeWordFilterModal = document.getElementById('closeWordFilterModal');
+    const cancelWordFilterBtn = document.getElementById('cancelWordFilterBtn');
+    const saveWordFilterBtn = document.getElementById('saveWordFilterBtn');
+    const mustHaveWordsTextarea = document.getElementById('mustHaveWords');
+    const mustNotHaveWordsTextarea = document.getElementById('mustNotHaveWords');
+
+    if (wordFilterBtn) {
+        wordFilterBtn.addEventListener('click', () => {
+            // Load current values
+            mustHaveWordsTextarea.value = (typeof window.MUST_HAVE_WORDS !== 'undefined' && window.MUST_HAVE_WORDS !== null) ? window.MUST_HAVE_WORDS : '';
+            mustNotHaveWordsTextarea.value = (typeof window.MUST_NOT_HAVE_WORDS !== 'undefined' && window.MUST_NOT_HAVE_WORDS !== null) ? window.MUST_NOT_HAVE_WORDS : '';
+
+            wordFilterModal.classList.remove('hidden');
+            setTimeout(() => {
+                wordFilterModal.classList.add('visible');
+                mustHaveWordsTextarea.focus();
+            }, 10);
+        });
+    }
+
+    const closeWordFilter = () => {
+        wordFilterModal.classList.remove('visible');
+        setTimeout(() => {
+            wordFilterModal.classList.add('hidden');
+        }, 300);
+    };
+
+    if (closeWordFilterModal) closeWordFilterModal.addEventListener('click', closeWordFilter);
+    if (cancelWordFilterBtn) cancelWordFilterBtn.addEventListener('click', closeWordFilter);
+
+    window.addEventListener('click', (e) => {
+        if (e.target === wordFilterModal) {
+            closeWordFilter();
+        }
+    });
+
+    if (saveWordFilterBtn) {
+        saveWordFilterBtn.addEventListener('click', async () => {
+            const mustHaveWords = mustHaveWordsTextarea.value;
+            const mustNotHaveWords = mustNotHaveWordsTextarea.value;
+
+            const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/update_word_filter';
+            try {
+                const resp = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mustHaveWords, mustNotHaveWords })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showMessage('Word filter updated successfully!', 'success');
+                    // Update the global constants so if they reopen it's current
+                    window.MUST_HAVE_WORDS = mustHaveWords;
+                    window.MUST_NOT_HAVE_WORDS = mustNotHaveWords;
+                    closeWordFilter();
+                } else {
+                    showMessage(data.error || 'Failed to update word filter.', 'error');
+                }
+            } catch (e) {
+                showMessage('Network error. Please try again.', 'error');
+            }
+        });
+    }
+
     let currentActiveIndex = -1;
     let currentActiveVideoId = null;
     let reorderMode = false;

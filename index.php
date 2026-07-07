@@ -382,6 +382,11 @@ switch ($route) {
         $controller->pairScreen();
         break;
 
+    case 'api/update_word_filter':
+        $controller = new ApiController();
+        $controller->updateWordFilter();
+        break;
+
     case 'api/search_songs':
         require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);

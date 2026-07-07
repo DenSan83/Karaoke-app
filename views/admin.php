@@ -43,6 +43,9 @@
                 <button id="pairScreenBtn" class="submenu-item">
                     <span class="icon">📺</span> <span class="btn-text">Pair to Screen</span>
                 </button>
+                <button id="wordFilterBtn" class="submenu-item">
+                    <span class="icon">🔍</span> <span class="btn-text">Word filter</span>
+                </button>
                 <button id="listCleanBtn" class="submenu-item">
                     <span class="icon">📋</span> <span class="btn-text">List and clean</span>
                 </button>
@@ -123,8 +126,34 @@
     </div>
 </div>
 
+<!-- Word Filter Modal -->
+<div id="wordFilterModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-modal" id="closeWordFilterModal">&times;</span>
+        <h2>Word Filter</h2>
+        <div class="word-filter-form">
+            <div class="form-group">
+                <label for="mustHaveWords">Must have words</label>
+                <textarea id="mustHaveWords" class="form-input" placeholder="e.g. karaoke, instrument, live"></textarea>
+                <small style="color: #888; display: block; margin-top: 5px;">Separate words by comma (,)</small>
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="mustNotHaveWords">Must not have words</label>
+                <textarea id="mustNotHaveWords" class="form-input" placeholder="e.g. remix, cover, reaction"></textarea>
+                <small style="color: #888; display: block; margin-top: 5px;">Separate words by comma (,)</small>
+            </div>
+            <div class="modal-actions">
+                <button id="cancelWordFilterBtn" class="btn-secondary">Cancel</button>
+                <button id="saveWordFilterBtn" class="btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const BASE_PATH = <?= json_encode($this->basePath ?? '') ?>;
+    window.MUST_HAVE_WORDS = <?= json_encode($group['must_have_words'] ?? '') ?>;
+    window.MUST_NOT_HAVE_WORDS = <?= json_encode($group['must_not_have_words'] ?? '') ?>;
 </script>
 <script src="public/js/admin.js"></script>
 

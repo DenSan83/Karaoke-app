@@ -38,7 +38,7 @@
         <div class="search-help">
             <span class="help-icon">💡</span>
             <p class="help-text">
-                <b>To request a song:</b> Open YouTube, copy the link of your favorite video (<b>ensure "karaoke" is in the title</b>), and paste it below. Then hit ➜!
+                <b>To request a song:</b> Open YouTube, copy the link of your favorite video and paste it below. Then hit ➜!
             </p>
         </div>
 

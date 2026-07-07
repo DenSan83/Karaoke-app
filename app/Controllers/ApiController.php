@@ -426,4 +426,25 @@ class ApiController {
             echo json_encode(['error' => 'Failed to refuse request']);
         }
     }
+
+    public function updateWordFilter() {
+        if (!$this->checkAuth()) return;
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        $mustHave = $data['mustHaveWords'] ?? '';
+        $mustNotHave = $data['mustNotHaveWords'] ?? '';
+
+        require_once 'app/Models/Group.php';
+        $groupModel = new Group();
+        if ($groupModel->update($this->groupId, [
+            'must_have_words' => $mustHave,
+            'must_not_have_words' => $mustNotHave
+        ])) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to update word filter']);
+        }
+    }
 }

@@ -136,7 +136,7 @@ requestBtn.addEventListener('click', async () => {
             requestBtn.disabled = false;
             if (btnText) btnText.style.display = 'inline-block';
             if (btnSpinner) btnSpinner.style.display = 'none';
-            showKaraokeConfirmModal(data.title, url);
+            showKaraokeConfirmModal(data.title, url, data.failedWord, data.filterType);
         } else {
             msgDiv.textContent = data.error || "Failed to add song";
             msgDiv.className = 'request-status-msg error';
@@ -381,10 +381,19 @@ function showCollisionModal(singerName, singerId, videoId) {
     };
 }
 
-function showKaraokeConfirmModal(title, url) {
+function showKaraokeConfirmModal(title, url, failedWord, filterType) {
     if (!karaokeModal || !karaokeText || !karaokeYes || !karaokeNo) return;
 
-    karaokeText.innerHTML = `You are adding:<br><strong>"${title}"</strong><br><br>The title doesn't mention "karaoke".<br>Are you sure this is a karaoke track?`;
+    let warningMessage = "";
+    if (filterType === 'must_have') {
+        warningMessage = `This video doesn't have the word <strong style="color: #9965f4;">${failedWord}</strong>.`;
+    } else if (filterType === 'must_not_have') {
+        warningMessage = `This video has the word <strong style="color: #9965f4;">${failedWord}</strong>.`;
+    } else {
+        warningMessage = `This video doesn't match the word filter settings.`;
+    }
+
+    karaokeText.innerHTML = `You are adding:<br><strong>"${title}"</strong><br><br>${warningMessage}<br>Are you sure you want to add it anyway?`;
     karaokeModal.classList.add('active');
 
     karaokeYes.onclick = async () => {

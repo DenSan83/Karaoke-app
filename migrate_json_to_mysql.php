@@ -45,7 +45,9 @@ function runMigration() {
             valid_from DATETIME NULL,
             valid_to DATETIME NULL,
             created_at INT NOT NULL,
-            allow_fallback TINYINT(1) NOT NULL DEFAULT 0
+            allow_fallback TINYINT(1) NOT NULL DEFAULT 0,
+            must_have_words TEXT NULL,
+            must_not_have_words TEXT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
         'settings' => "CREATE TABLE IF NOT EXISTS `settings` (
