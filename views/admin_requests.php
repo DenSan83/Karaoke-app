@@ -19,7 +19,7 @@
 
 <div class="layout">
     <aside class="sidebar">
-        <a href="admin" class="sidebar-btn">
+        <a href="admin" class="sidebar-btn queue">
             <span class="icon">📋</span> <span class="btn-text">Queue</span>
         </a>
         <a href="logout" class="sidebar-btn logout-btn">

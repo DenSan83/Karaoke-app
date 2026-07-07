@@ -33,7 +33,10 @@
                 <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Manage the active code for guests at the venue.</p>
                 
                 <div id="qrcode-section" class="qrcode-section hidden">
-                    <div id="qrcode" class="qrcode-wrapper"></div>
+                    <div id="qrcode" class="qrcode-wrapper">
+                        <!-- Loading spinner -->
+                        <div id="qr-spinner" class="qr-spinner"></div>
+                    </div>
                     <p class="qrcode-hint">Scan to join the party automatically</p>
                 </div>
 

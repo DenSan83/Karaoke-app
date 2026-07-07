@@ -26,7 +26,14 @@ function updateQRCode() {
     console.log("Generating QR for:", joinUrl);
 
     try {
-        container.innerHTML = ''; // Ensure container is empty
+        const spinner = document.getElementById('qr-spinner');
+        if (spinner) spinner.classList.remove('hidden');
+
+        // Clear only the generated QR (img and canvas), but keep the spinner if it exists
+        const oldImg = container.querySelector('img');
+        const oldCanvas = container.querySelector('canvas');
+        if (oldImg) oldImg.remove();
+        if (oldCanvas) oldCanvas.remove();
         
         // Use a slight delay to ensure the DOM is ready and library is definitely loaded
         setTimeout(() => {
@@ -61,6 +68,7 @@ function updateQRCode() {
                     img.style.maxWidth = '100%';
                     img.style.height = 'auto';
                     if (canvas) canvas.style.display = 'none';
+                    if (spinner) spinner.classList.add('hidden');
                     
                     // On some mobile browsers, the image might need an explicit trigger to redraw
                     img.style.opacity = '0.99';
@@ -77,6 +85,7 @@ function updateQRCode() {
                         canvas.style.background = '#fff';
                         canvas.style.padding = '5px';
                     }
+                    if (spinner) spinner.classList.add('hidden');
                     clearInterval(checkImg);
                 }
                 attempts++;

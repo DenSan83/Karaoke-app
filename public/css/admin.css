@@ -347,6 +347,10 @@ textarea.form-input {
     font-family: inherit;
 }
 
+input[type="text"] {
+    text-align: center;
+}
+
 textarea.form-input {
     min-height: 80px;
     resize: vertical;
@@ -635,16 +639,44 @@ button:active {
 
 /* Responsive */
 @media (max-width: 768px) {
+    .admin-header {
+        padding: 10px 15px;
+        position: static;
+        margin-bottom: 0;
+    }
+
+    .admin-container {
+        padding-top: 20px;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .header-content h1 {
+        order: -1;
+        margin: 0;
+        font-size: 1.4rem;
+        line-height: 1.2;
+    }
+
+    .back-link {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
     .sidebar {
         box-sizing: border-box;
         width: 100%;
-        height: 70px;
+        height: 75px;
         top: auto;
         bottom: 0;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        padding: 0 20px;
+        padding: 0 10px;
         /* Space from edges */
         border-right: none;
         border-top: 1px solid #333;
@@ -655,24 +687,40 @@ button:active {
         flex-direction: row;
         justify-content: space-between;
         width: auto;
+        gap: 5px;
     }
     .justify-left-sidebar button {
-        margin-right: 10px;
+        margin-right: 0;
     }
 
-    .sidebar-btn {
-        width: 50px !important;
-        max-width: 150px;
-        height: 50px;
+    .sidebar-btn.queue {
+        min-width: 65px;
+        height: 60px;
         flex-direction: row;
-        gap: 10px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .sidebar-btn.queue .btn-text {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .sidebar-btn:not(.queue) {
+        width: 65px !important;
+        max-width: 150px;
+        height: 60px;
+        flex-direction: column;
+        gap: 4px;
+        padding: 5px !important;
     }
 
     .reorder-btn,
     #optionsBtn {
-        width: 50px !important;
-        min-width: 50px;
-        padding: 0 !important;
+        width: 65px !important;
+        min-width: 65px;
+        padding: 5px !important;
         margin-top: 0 !important;
         border-radius: 8px;
     }
@@ -680,24 +728,29 @@ button:active {
     #openAddModalBtn .btn-text,
     .reorder-btn .btn-text,
     #optionsBtn .btn-text {
-        display: none;
+        display: block;
+        font-size: 0.7rem;
+        font-weight: normal;
     }
 
     .logout-btn {
-        width: 50px !important;
-        min-width: 50px;
-        padding: 0 !important;
+        width: 65px !important;
+        min-width: 65px;
+        padding: 5px !important;
         margin-top: 0 !important;
         margin-bottom: 0 !important;
         border-radius: 8px;
     }
 
     .logout-btn .btn-text {
-        display: none;
+        display: block;
+        font-size: 0.7rem;
+        font-weight: normal;
     }
 
     .sidebar-btn .icon {
         margin-bottom: 0;
+        font-size: 1.2rem;
     }
 
     .main-content {
@@ -868,41 +921,51 @@ button:active {
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 10px;
+        gap: 5px;
         position: relative;
     }
 
     .requests-btn {
-        width: 50px !important;
-        min-width: 50px;
-        padding: 0 !important;
+        width: 65px !important;
+        min-width: 65px;
+        height: 60px;
+        flex-direction: column;
+        gap: 4px;
+        padding: 5px !important;
         margin-top: 0 !important;
         border-radius: 8px;
         background-color: #4fc3f7;
     }
 
     .requests-btn .btn-text {
-        display: none;
+        display: block;
+        font-size: 0.7rem;
+        font-weight: normal;
     }
 
     .sidebar-submenu {
         position: absolute;
-        bottom: 60px;
+        bottom: 70px;
         right: 0;
         width: 180px;
         /* Wider for accessibility on mobile dropdown */
     }
 
     .options-toggle-btn {
-        width: 50px !important;
-        min-width: 50px;
-        padding: 0 !important;
+        width: 65px !important;
+        min-width: 65px;
+        height: 60px;
+        flex-direction: column;
+        gap: 4px;
+        padding: 5px !important;
         margin-top: 0 !important;
         border-radius: 8px;
     }
 
     .options-toggle-btn .btn-text {
-        display: none;
+        display: block;
+        font-size: 0.7rem;
+        font-weight: normal;
     }
 }
 .checkbox-group {

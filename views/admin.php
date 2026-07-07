@@ -121,8 +121,8 @@
                 </label>
             </div>
             <div class="modal-actions">
-                <button id="executeBtn" class="btn-primary">Execute</button>
                 <button id="cancelListCleanBtn" class="btn-secondary">Cancel</button>
+                <button id="executeBtn" class="btn-primary">Execute</button>
             </div>
         </div>
     </div>
