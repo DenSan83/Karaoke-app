@@ -37,6 +37,7 @@
         <div class="sidebar-options-container">
             <a href="admin/requests" class="sidebar-btn requests-btn">
                 <span class="icon">🎵</span> <span class="btn-text">Requests</span>
+                <span id="requestsBadge" class="badge hidden">0</span>
             </a>
             <div id="optionsSubmenu" class="sidebar-submenu hidden">
                 <a href="admin/codes" class="submenu-item">

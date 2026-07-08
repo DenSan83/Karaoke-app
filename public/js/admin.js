@@ -610,6 +610,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 1000);
 
+    // Requests badge polling
+    const updateRequestsBadge = async () => {
+        try {
+            const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/get_requests';
+            const res = await fetch(apiUrl);
+            const requests = await res.json();
+            const badge = document.getElementById('requestsBadge');
+            if (badge) {
+                const count = requests.length;
+                badge.textContent = count;
+                if (count > 0) {
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching requests:', e);
+        }
+    };
+    setInterval(updateRequestsBadge, 3000);
+    updateRequestsBadge();
+
     function updateActiveTrackHighlight() {
         const items = document.querySelectorAll('#playlist-items li');
         const playlist = JSON.parse(localStorage.getItem('currentPlaylist') || '[]');
