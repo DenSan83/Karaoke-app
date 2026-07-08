@@ -33,6 +33,7 @@ class Database {
 
         try {
             $this->pdo = new PDO($dsn, $user, $pass, $options);
+            $this->pdo->exec("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
         } catch (\PDOException $e) {
             throw new \PDOException($e->getMessage(), (int)$e->getCode());
         }

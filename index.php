@@ -35,18 +35,25 @@ $route = trim($route, '/');
 if ($route !== 'installing' && strpos($route, 'api/install') !== 0) {
     if (!SystemCheck::checkDatabase()) {
         if (isset($_GET['migration_attempted'])) {
+            header('Content-Type: text/plain; charset=utf-8');
             die("La migration a été tentée mais la base de données n'est toujours pas prête. Veuillez vérifier votre configuration .env et vos logs d'erreur.");
         }
         try {
             $GLOBALS['RUN_MIGRATION'] = true;
             require_once 'migrate_json_to_mysql.php';
-            // After migration, we should ideally refresh or continue carefully.
-            // To be safe and avoid any issues with loaded classes, we can redirect to the same page.
-            $separator = (strpos($_SERVER['REQUEST_URI'], '?') === false) ? '?' : '&';
-            header('Location: ' . $_SERVER['REQUEST_URI'] . $separator . 'migration_attempted=1');
-            exit;
+            
+            // Re-check after migration
+            if (SystemCheck::checkDatabase()) {
+                $separator = (strpos($_SERVER['REQUEST_URI'], '?') === false) ? '?' : '&';
+                header('Location: ' . $_SERVER['REQUEST_URI'] . $separator . 'migration_attempted=1');
+                exit;
+            } else {
+                header('Content-Type: text/plain; charset=utf-8');
+                die("Migration failed or database still not ready.");
+            }
         } catch (Exception $e) {
-            // Fallback or log error
+            header('Content-Type: text/plain; charset=utf-8');
+            die("Migration error: " . $e->getMessage());
         }
     }
 }
@@ -110,13 +117,22 @@ if (!empty($_SESSION) || isset($_COOKIE['karaoke_client_id'])) {
                 $params = array_merge($params, $jsonInput);
             }
 
-            $sysLog->log('BANNED_TRY', [
-                'client_id' => $clientId,
-                'method' => $_SERVER['REQUEST_METHOD'],
-                'params' => $params,
-                'group_name' => $groupName,
-                'banned_since' => $banDetails['banned_at'] ?? 'Unknown'
-            ]);
+            if (!empty($params) && is_array($params)) {
+                $sysLog->log('BANNED_TRY', [
+                    'client_id' => $clientId,
+                    'method' => $_SERVER['REQUEST_METHOD'],
+                    'params' => $params,
+                    'group_name' => $groupName,
+                    'banned_since' => $banDetails['banned_at'] ?? 'Unknown'
+                ]);
+            } else {
+                 $sysLog->log('BANNED_TRY', [
+                    'client_id' => $clientId,
+                    'method' => $_SERVER['REQUEST_METHOD'],
+                    'group_name' => $groupName,
+                    'banned_since' => $banDetails['banned_at'] ?? 'Unknown'
+                ]);
+            }
         }
         
         if (!empty($_SESSION)) {

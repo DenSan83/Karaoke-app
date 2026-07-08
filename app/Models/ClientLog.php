@@ -71,36 +71,58 @@ class ClientLog {
     }
 
     public function getConnectionsByGroup($groupId) {
-        $sql = "SELECT client_id, group_id, type, 
-                       JSON_ARRAYAGG(JSON_OBJECT('identity', identity, 'is_online', is_online, 'last_activity', last_activity)) as identities_json,
-                       MAX(created_at) as created_at,
-                       MAX(last_activity) as max_last_activity,
-                       MAX(is_banned) as is_banned,
-                       data 
-                FROM (
-                    SELECT * FROM `client_connections` 
-                    WHERE group_id = ? 
-                    ORDER BY created_at DESC
-                ) as sub 
-                GROUP BY client_id 
+        $sql = "SELECT * FROM `client_connections` 
+                WHERE group_id = ? 
                 ORDER BY created_at DESC";
-        return $this->db->fetchAll($sql, [$groupId]);
+        $rows = $this->db->fetchAll($sql, [$groupId]);
+        return $this->groupIdentities($rows, true);
     }
 
     public function getAllClients() {
-        $sql = "SELECT client_id, group_id, type, 
-                       JSON_ARRAYAGG(JSON_OBJECT('identity', identity, 'is_online', is_online, 'last_activity', last_activity)) as identities_json,
-                       MAX(created_at) as created_at,
-                       MAX(last_activity) as max_last_activity,
-                       MAX(is_banned) as is_banned,
-                       data 
-                FROM (
-                    SELECT * FROM `client_connections` 
-                    ORDER BY created_at DESC
-                ) as sub 
-                GROUP BY client_id, group_id
+        $sql = "SELECT * FROM `client_connections` 
                 ORDER BY created_at DESC";
-        return $this->db->fetchAll($sql);
+        $rows = $this->db->fetchAll($sql);
+        return $this->groupIdentities($rows, false);
+    }
+
+    private function groupIdentities($rows, $byGroupOnly = true) {
+        $clients = [];
+        foreach ($rows as $row) {
+            $key = $byGroupOnly ? $row['client_id'] : $row['client_id'] . '_' . $row['group_id'];
+            if (!isset($clients[$key])) {
+                $clients[$key] = [
+                    'client_id' => $row['client_id'],
+                    'group_id' => $row['group_id'],
+                    'type' => $row['type'],
+                    'created_at' => $row['created_at'],
+                    'max_last_activity' => $row['last_activity'],
+                    'is_banned' => $row['is_banned'],
+                    'data' => $row['data'],
+                    'identities' => []
+                ];
+            }
+            
+            $clients[$key]['identities'][] = [
+                'identity' => $row['identity'],
+                'is_online' => $row['is_online'],
+                'last_activity' => $row['last_activity']
+            ];
+            
+            if (strtotime($row['last_activity']) > strtotime($clients[$key]['max_last_activity'])) {
+                $clients[$key]['max_last_activity'] = $row['last_activity'];
+            }
+            if ($row['is_banned'] > $clients[$key]['is_banned']) {
+                $clients[$key]['is_banned'] = $row['is_banned'];
+            }
+        }
+
+        // Format identities as JSON string to match previous API behavior if needed, 
+        // or just return the array. The previous code used JSON_ARRAYAGG which returns a JSON string in MySQL.
+        foreach ($clients as &$client) {
+            $client['identities_json'] = json_encode($client['identities']);
+        }
+        
+        return array_values($clients);
     }
 
     public function clearConnectionsByGroup($groupId) {

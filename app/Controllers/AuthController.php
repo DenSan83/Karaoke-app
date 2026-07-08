@@ -108,7 +108,11 @@ class AuthController {
             $guestModel = new Guest($groupId);
             $guest = $guestModel->getById($guestId);
             $identity = $guest['name'] ?? 'guest';
-            $clientLog->logout($groupId, 'guest', $identity);
+            
+            // Try-catch for client log as it might fail on DB issues
+            try {
+                $clientLog->logout($groupId, 'guest', $identity);
+            } catch (Exception $e) {}
 
             // 1. Remove from guests.json
             $guestModel->remove($guestId);
@@ -116,7 +120,9 @@ class AuthController {
             // 2. Remove activity logs
             require_once 'app/Models/SystemLog.php';
             $sysLog = new SystemLog($groupId);
-            $sysLog->removeLogsByGuestId($guestId);
+            try {
+                $sysLog->removeLogsByGuestId($guestId);
+            } catch (Exception $e) {}
             
             $redirect = ($this->basePath ?: '') . '/';
         } else {
@@ -126,16 +132,20 @@ class AuthController {
             $logGroupId = $isSuperAdmin ? 'system' : ($groupId ?? 'default');
             
             // Log logout to ClientLog
-            $clientLog->logout($logGroupId, $type, $identity);
+            try {
+                $clientLog->logout($logGroupId, $type, $identity);
+            } catch (Exception $e) {}
 
             // Also log to SystemLog for admins
             require_once 'app/Models/SystemLog.php';
             $sysLog = new SystemLog($logGroupId);
-            $sysLog->log('user_logout', [
-                'username' => $identity,
-                'role' => $type,
-                'timestamp' => time()
-            ]);
+            try {
+                $sysLog->log('user_logout', [
+                    'username' => $identity,
+                    'role' => $type,
+                    'timestamp' => time()
+                ]);
+            } catch (Exception $e) {}
 
             $redirect = ($this->basePath ?: '') . '/login';
         }

@@ -25,9 +25,20 @@ class SystemCheck {
             $ytDlpExe = __DIR__ . '/../../yt-dlp.exe';
             return file_exists($ytDlpExe);
         } else {
+            if (!function_exists('exec') || self::isExecDisabled()) {
+                return false;
+            }
             exec('which yt-dlp 2>/dev/null', $output, $returnCode);
             return $returnCode === 0;
         }
+    }
+
+    /**
+     * Check if exec is disabled in php.ini
+     */
+    private static function isExecDisabled() {
+        $disabledFunctions = explode(',', ini_get('disable_functions'));
+        return in_array('exec', array_map('trim', $disabledFunctions));
     }
 
     /**
