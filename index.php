@@ -1,4 +1,7 @@
 <?php
+#ini_set('display_errors', 1);
+#ini_set('display_startup_errors', 1);
+#error_reporting(E_ALL);
 // Set session cookie and garbage collector lifetime to 4 hours (14400 seconds)
 ini_set('session.gc_maxlifetime', 14400);
 session_set_cookie_params(14400);
@@ -80,7 +83,16 @@ if (!empty($_SESSION) || isset($_COOKIE['karaoke_client_id'])) {
     $clientId = $_COOKIE['karaoke_client_id'] ?? null;
 
     // Check if client is banned
-    if ($clientId && $clientLog->isBanned($clientId)) {
+    $isBanned = false;
+    try {
+        $isBanned = $clientId && $clientLog->isBanned($clientId);
+    } catch (Exception $e) {
+        // If DB table is missing or other issue, assume not banned to let user continue
+        // The migration should ideally have been caught by SystemCheck::checkDatabase()
+        error_log("Ban check error: " . $e->getMessage());
+    }
+
+    if ($isBanned) {
         // If they are trying to access anything other than root or login with banned status, block them
         $allowed_banned_routes = ['', 'login', 'superadmin/login'];
 

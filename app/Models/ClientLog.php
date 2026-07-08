@@ -27,32 +27,53 @@ class ClientLog {
             $metadata['fingerprint'] = $_SESSION['guest_fingerprint'];
         }
 
-        $sql = "INSERT INTO `client_connections` (group_id, client_id, type, identity, last_activity, is_online, data) 
-                VALUES (?, ?, ?, ?, NOW(), 1, ?)
-                ON DUPLICATE KEY UPDATE 
-                last_activity = NOW(),
-                is_online = 1,
-                data = VALUES(data),
-                created_at = CURRENT_TIMESTAMP";
-        return $this->db->query($sql, [$groupId, $clientId, $type, $identity, json_encode($metadata)]);
+        try {
+            $sql = "INSERT INTO `client_connections` (group_id, client_id, type, identity, last_activity, is_online, data) 
+                    VALUES (?, ?, ?, ?, NOW(), 1, ?)
+                    ON DUPLICATE KEY UPDATE 
+                    last_activity = NOW(),
+                    is_online = 1,
+                    data = VALUES(data),
+                    created_at = CURRENT_TIMESTAMP";
+            return $this->db->query($sql, [$groupId, $clientId, $type, $identity, json_encode($metadata)]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     public function updateActivity($groupId, $type, $identity) {
         if (!$groupId) return false;
         $clientId = $this->getOrCreateClientId();
-        $sql = "UPDATE `client_connections` 
-                SET last_activity = NOW(), is_online = 1 
-                WHERE group_id = ? AND client_id = ? AND type = ? AND identity = ?";
-        return $this->db->query($sql, [$groupId, $clientId, $type, $identity]);
+        try {
+            $sql = "UPDATE `client_connections` 
+                    SET last_activity = NOW(), is_online = 1 
+                    WHERE group_id = ? AND client_id = ? AND type = ? AND identity = ?";
+            return $this->db->query($sql, [$groupId, $clientId, $type, $identity]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     public function logout($groupId, $type, $identity) {
         if (!$groupId) return false;
         $clientId = $this->getOrCreateClientId();
-        $sql = "UPDATE `client_connections` 
-                SET is_online = 0 
-                WHERE group_id = ? AND client_id = ? AND type = ? AND identity = ?";
-        return $this->db->query($sql, [$groupId, $clientId, $type, $identity]);
+        try {
+            $sql = "UPDATE `client_connections` 
+                    SET is_online = 0 
+                    WHERE group_id = ? AND client_id = ? AND type = ? AND identity = ?";
+            return $this->db->query($sql, [$groupId, $clientId, $type, $identity]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     private function getIpAddress() {
@@ -71,18 +92,28 @@ class ClientLog {
     }
 
     public function getConnectionsByGroup($groupId) {
-        $sql = "SELECT * FROM `client_connections` 
-                WHERE group_id = ? 
-                ORDER BY created_at DESC";
-        $rows = $this->db->fetchAll($sql, [$groupId]);
-        return $this->groupIdentities($rows, true);
+        try {
+            $sql = "SELECT * FROM `client_connections` 
+                    WHERE group_id = ? 
+                    ORDER BY created_at DESC";
+            $rows = $this->db->fetchAll($sql, [$groupId]);
+            return $this->groupIdentities($rows, true);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') return [];
+            throw $e;
+        }
     }
 
     public function getAllClients() {
-        $sql = "SELECT * FROM `client_connections` 
-                ORDER BY created_at DESC";
-        $rows = $this->db->fetchAll($sql);
-        return $this->groupIdentities($rows, false);
+        try {
+            $sql = "SELECT * FROM `client_connections` 
+                    ORDER BY created_at DESC";
+            $rows = $this->db->fetchAll($sql);
+            return $this->groupIdentities($rows, false);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') return [];
+            throw $e;
+        }
     }
 
     private function groupIdentities($rows, $byGroupOnly = true) {
@@ -127,40 +158,75 @@ class ClientLog {
 
     public function clearConnectionsByGroup($groupId) {
         if (!$groupId) return false;
-        $sql = "DELETE FROM `client_connections` WHERE group_id = ?";
-        return $this->db->query($sql, [$groupId]);
+        try {
+            $sql = "DELETE FROM `client_connections` WHERE group_id = ?";
+            return $this->db->query($sql, [$groupId]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') return true;
+            throw $e;
+        }
     }
 
     public function deleteClient($clientId, $groupId) {
         if (!$clientId || !$groupId) return false;
-        $sql = "DELETE FROM `client_connections` WHERE client_id = ? AND group_id = ?";
-        return $this->db->query($sql, [$clientId, $groupId]);
+        try {
+            $sql = "DELETE FROM `client_connections` WHERE client_id = ? AND group_id = ?";
+            return $this->db->query($sql, [$clientId, $groupId]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') return true;
+            throw $e;
+        }
     }
 
     public function banClient($clientId) {
         if (!$clientId) return false;
-        // Mark as offline and banned for all entries of this client
-        $sql = "UPDATE `client_connections` SET is_banned = 1, is_online = 0, banned_at = NOW() WHERE client_id = ?";
-        return $this->db->query($sql, [$clientId]);
+        try {
+            // Mark as offline and banned for all entries of this client
+            $sql = "UPDATE `client_connections` SET is_banned = 1, is_online = 0, banned_at = NOW() WHERE client_id = ?";
+            return $this->db->query($sql, [$clientId]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') return false;
+            throw $e;
+        }
     }
 
     public function unbanClient($clientId) {
         if (!$clientId) return false;
-        $sql = "UPDATE `client_connections` SET is_banned = 0, banned_at = NULL WHERE client_id = ?";
-        return $this->db->query($sql, [$clientId]);
+        try {
+            $sql = "UPDATE `client_connections` SET is_banned = 0, banned_at = NULL WHERE client_id = ?";
+            return $this->db->query($sql, [$clientId]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') return true;
+            throw $e;
+        }
     }
 
     public function isBanned($clientId) {
         if (!$clientId) return false;
-        $sql = "SELECT COUNT(*) as count FROM `client_connections` WHERE client_id = ? AND is_banned = 1";
-        $result = $this->db->fetch($sql, [$clientId]);
-        return ($result['count'] ?? 0) > 0;
+        try {
+            $sql = "SELECT COUNT(*) as count FROM `client_connections` WHERE client_id = ? AND is_banned = 1";
+            $result = $this->db->fetch($sql, [$clientId]);
+            return ($result['count'] ?? 0) > 0;
+        } catch (PDOException $e) {
+            // If table doesn't exist, nobody is banned yet
+            if ($e->getCode() == '42S02') {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     public function getBanDetails($clientId) {
         if (!$clientId) return null;
-        $sql = "SELECT group_id, banned_at FROM `client_connections` WHERE client_id = ? AND is_banned = 1 LIMIT 1";
-        return $this->db->fetch($sql, [$clientId]);
+        try {
+            $sql = "SELECT group_id, banned_at FROM `client_connections` WHERE client_id = ? AND is_banned = 1 LIMIT 1";
+            return $this->db->fetch($sql, [$clientId]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S02') {
+                return null;
+            }
+            throw $e;
+        }
     }
 
     public function getOrCreateClientId() {
