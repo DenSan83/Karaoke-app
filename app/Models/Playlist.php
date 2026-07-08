@@ -233,7 +233,12 @@ class Playlist {
             $dbId = $rows[0]['id'];
             $this->db->query("DELETE FROM `playlist` WHERE id = ?", [$dbId]);
             // Re-normalize sort_order to avoid gaps (optional but good)
-            $this->db->query("SET @rank = -1; UPDATE `playlist` SET sort_order = (@rank := @rank + 1) WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
+            try {
+                $this->db->query("SET @rank = -1");
+                $this->db->query("UPDATE `playlist` SET sort_order = (@rank := @rank + 1) WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
+            } catch (\PDOException $e) {
+                // Ignore if rank re-normalization fails
+            }
         }
         
         return ['success' => true];
@@ -246,7 +251,13 @@ class Playlist {
         $this->db->query($sql, [$this->groupId, $videoId, $user]);
         
         // Re-normalize sort_order
-        $this->db->query("SET @rank = -1; UPDATE `playlist` SET sort_order = (@rank := @rank + 1) WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
+        try {
+            $this->db->query("SET @rank = -1");
+            $this->db->query("UPDATE `playlist` SET sort_order = (@rank := @rank + 1) WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
+        } catch (\PDOException $e) {
+            // If the single-query multi-statement is not allowed or fails, we skip re-normalization or do it differently
+            // but usually separate queries should work fine.
+        }
         
         return ['success' => true];
     }

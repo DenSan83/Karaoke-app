@@ -16,8 +16,9 @@
 .guest-welcome h1 {
     font-size: 1.5rem;
     color: var(--primary-color);
-    margin: 0;
+    margin: 0 !important;
     text-align: left;
+    display: inline-block;
 }
 
 .guest-welcome .party-name {
@@ -27,37 +28,83 @@
     font-weight: 500;
 }
 
-.guest-welcome p {
-    margin: 5px 0 0;
-    color: #888;
-    font-size: 0.9rem;
+.h1-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    vertical-align: middle;
+    white-space: nowrap;
 }
 
-.search-help {
-    background: rgba(187, 134, 252, 0.05);
-    border: 1px dashed rgba(187, 134, 252, 0.3);
+.help-trigger {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(187, 134, 252, 0.15);
+    border: 1px solid rgba(187, 134, 252, 0.4);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.help-trigger:hover {
+    background: var(--primary-color);
+    color: #000;
+}
+
+.search-help-tooltip {
+    position: absolute;
+    top: calc(100% + 15px);
+    left: 0;
+    background: #1e1e1e;
+    border: 1px solid #444;
     border-radius: 12px;
     padding: 15px;
-    margin-bottom: 20px;
-    display: flex;
+    width: 280px;
+    z-index: 1000;
+    display: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.2s ease;
+    white-space: normal;
+}
+
+.search-help-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 45px;
+    border: 8px solid transparent;
+    border-bottom-color: #444;
+}
+
+.search-help-tooltip.active,
+.h1-wrapper:hover .search-help-tooltip {
+    display: flex !important;
     gap: 12px;
     align-items: flex-start;
 }
 
-.search-help .help-icon {
+.search-help-tooltip .help-icon {
     font-size: 1.2rem;
     filter: grayscale(1);
     opacity: 0.7;
 }
 
-.search-help .help-text {
+.search-help-tooltip .help-text {
     font-size: 0.85rem;
     color: #aaa;
     line-height: 1.5;
     margin: 0;
 }
 
-.search-help .help-text b {
+.search-help-tooltip .help-text b {
     color: var(--secondary-color);
 }
 
@@ -140,20 +187,7 @@
     align-items: center;
     gap: 15px;
     border: 1px solid #333;
-    animation: slideIn 0.3s ease;
     position: relative;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
 }
 
 .song-status {
@@ -227,55 +261,86 @@
     background: rgba(207, 102, 121, 0.2);
 }
 
-/* Reorder Styles (Synced with admin.css) */
+/* My Queue Styles */
 .my-queue-header {
+    margin-bottom: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    border-bottom: 1px solid #333;
 }
 
-.guest-reorder-btn {
-    background: transparent;
-    border: 1px solid #444;
-    color: #888;
+.toggle-list-btn {
+    background: rgba(187, 134, 252, 0.1);
+    border: 1px solid rgba(187, 134, 252, 0.3);
+    color: var(--primary-color);
     padding: 6px 14px;
-    border-radius: 8px;
+    border-radius: 20px;
+    font-size: 0.85rem;
     cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.3s;
-    text-transform: uppercase;
+    transition: all 0.2s ease;
     width: auto;
-    flex-grow: 0;
-    flex-shrink: 0;
-    font-weight: 500;
-    letter-spacing: 0.5px;
 }
 
-.guest-reorder-btn.active {
-    background: var(--secondary-color);
-    border-color: var(--secondary-color);
+.toggle-list-btn:hover {
+    background: var(--primary-color);
     color: #000;
 }
 
-.song-item.dragging {
-    opacity: 0.4;
-    background: #444;
+.full-playlist-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-.song-item[draggable="true"] {
-    cursor: move;
-    border-style: dashed;
-    border-color: #555;
-}
-
-.drag-placeholder {
-    height: 80px;
-    background: rgba(187, 134, 252, 0.05);
-    border: 2px dashed var(--primary-color);
+.full-playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #333;
     border-radius: 12px;
     margin-bottom: 10px;
-    list-style: none;
+}
+
+.full-playlist-item .video-thumbnail {
+    width: 60px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.full-playlist-item .video-info {
+    flex-grow: 1;
+}
+
+.full-playlist-item .video-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #eee;
+}
+
+.full-playlist-item .video-user {
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+    margin-top: 2px;
+}
+
+.full-playlist-item.current-singing {
+    border-color: var(--secondary-color);
+    background: rgba(3, 218, 198, 0.05);
+}
+
+.full-playlist-item.current-singing .video-user::after {
+    content: " • Singing Now";
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.highlight-you {
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 /* Collision Modal & Notifications - Renamed for absolute uniqueness */
@@ -393,6 +458,19 @@
     margin-left: 5px;
 }
 
+.remove-song-btn:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.4 !important;
+    transform: none !important;
+    background: transparent !important;
+    color: #666 !important;
+    border-color: #444 !important;
+}
+
+.remove-song-btn .btn-spinner {
+    font-size: 14px;
+}
+
 .remove-song-btn:hover {
     background: rgba(207, 102, 121, 0.1);
     color: var(--error-color);
@@ -405,18 +483,37 @@
     margin-top: 10px;
     font-size: 0.85rem;
     min-height: 20px;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: block;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.request-status-msg:empty {
+    margin-top: 0;
+    min-height: 0;
+    padding: 0;
+    border-width: 0;
+    opacity: 0;
 }
 
 .request-status-msg.error {
+    background: rgba(207, 102, 121, 0.1);
     color: var(--error-color);
+    border-color: rgba(207, 102, 121, 0.2);
 }
 
 .request-status-msg.muted {
+    background: rgba(255, 255, 255, 0.05);
     color: #888;
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .request-status-msg.success {
+    background: rgba(3, 218, 198, 0.1);
     color: var(--secondary-color);
+    border-color: rgba(3, 218, 198, 0.2);
 }
 
 .guest-modal-overlay.active {

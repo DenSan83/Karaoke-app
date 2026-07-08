@@ -12,9 +12,17 @@
     <div class="guest-container">
         <header class="guest-header">
             <div class="guest-welcome">
-                <h1>Hi, <?php echo htmlspecialchars($guest['name']); ?>!</h1>
+                <div class="h1-wrapper">
+                    <h1>Hi, <?php echo htmlspecialchars($guest['name']); ?>!</h1>
+                    <div class="help-trigger" title="Search Help">?</div>
+                    <div class="search-help-tooltip">
+                        <span class="help-icon">💡</span>
+                        <p class="help-text">
+                            <b>To request a song:</b> Open YouTube, copy the link of your favorite video and paste it below. Then hit <b>➜</b>!
+                        </p>
+                    </div>
+                </div>
                 <h2 class="party-name"><?php echo htmlspecialchars($partyName); ?></h2>
-                <p>What would you like to sing?</p>
             </div>
             <a href="logout" class="logout-icon" title="Leave Party">
                 <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -35,13 +43,6 @@
             <?php endif; ?>
         </div>
 
-        <div class="search-help">
-            <span class="help-icon">💡</span>
-            <p class="help-text">
-                <b>To request a song:</b> Open YouTube, copy the link of your favorite video and paste it below. Then hit ➜!
-            </p>
-        </div>
-
         <section class="search-section">
             <h3>Request a Song</h3>
             <div class="search-group">
@@ -59,46 +60,57 @@
 
         <section class="my-queue">
             <div class="my-queue-header">
-                <h2>My Requests</h2>
-                <button id="reorder-btn" class="guest-reorder-btn">Reorder</button>
+                <h2 id="queue-title">My Requests</h2>
+                <button id="toggle-full-playlist" class="toggle-list-btn">See complete list</button>
             </div>
-            <ul id="guest-songs">
-                <?php if (empty($guest['songs'])): ?>
-                    <li class="empty-queue-msg">
-                        You haven't requested any songs yet.<br>
-                        <small>Add a YouTube URL above to join the fun!</small>
-                    </li>
-                <?php else: ?>
-                    <?php 
-                    // Show latest first
-                    $songs = array_reverse($guest['songs']);
-                    foreach ($songs as $song): 
-                    ?>
-                        <li class="song-item">
-                            <img src="https://img.youtube.com/vi/<?php echo htmlspecialchars($song['id'] ?? ''); ?>/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
-                            <div class="video-info">
-                                <div class="video-title"><?php echo htmlspecialchars($song['title'] ?? 'Song Request'); ?></div>
-                                <div class="video-id"><?php echo htmlspecialchars($song['id'] ?? ''); ?></div>
-                            </div>
-                            <?php 
-                                $displayStatus = isset($calculateStatus) 
-                                    ? $calculateStatus($song['id'], $song['status'] ?? 'Waiting') 
-                                    : ($song['status'] ?? 'Waiting'); 
-                                
-                                $statusClass = strtolower($song['status'] ?? 'waiting');
-                                if ($displayStatus === 'Singing now') $statusClass .= ' singing-now';
-                                elseif ($displayStatus === 'Coming up') $statusClass .= ' coming-up';
-                                elseif (strpos($displayStatus, 'songs left') !== false) $statusClass .= ' songs-left';
-                                elseif ($displayStatus === 'Done') $statusClass = 'done'; // Override status class for Done
-                            ?>
-                            <div class="song-status <?php echo $statusClass; ?>">
-                                <?php echo htmlspecialchars($displayStatus); ?>
-                            </div>
-                            <button class="remove-song-btn" onclick="confirmRemoveSong('<?php echo $song['id']; ?>', '<?php echo addslashes($song['title']); ?>')" title="Remove Song">×</button>
+            <div id="my-requests-section">
+                <ul id="guest-songs">
+                    <?php if (empty($guest['songs'])): ?>
+                        <li class="empty-queue-msg">
+                            You haven't requested any songs yet.<br>
+                            <small>Add a YouTube URL above to join the fun!</small>
                         </li>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </ul>
+                    <?php else: ?>
+                        <?php 
+                        // Show latest first
+                        $songs = array_reverse($guest['songs']);
+                        foreach ($songs as $song): 
+                        ?>
+                            <li class="song-item">
+                                <img src="https://img.youtube.com/vi/<?php echo htmlspecialchars($song['id'] ?? ''); ?>/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
+                                <div class="video-info">
+                                    <div class="video-title"><?php echo htmlspecialchars($song['title'] ?? 'Song Request'); ?></div>
+                                    <div class="video-id"><?php echo htmlspecialchars($song['id'] ?? ''); ?></div>
+                                </div>
+                                <?php 
+                                    $displayStatus = isset($calculateStatus) 
+                                        ? $calculateStatus($song['id'], $song['status'] ?? 'Waiting') 
+                                        : ($song['status'] ?? 'Waiting'); 
+                                    
+                                    $statusClass = strtolower($song['status'] ?? 'waiting');
+                                    if ($displayStatus === 'Singing now') $statusClass .= ' singing-now';
+                                    elseif ($displayStatus === 'Coming up') $statusClass .= ' coming-up';
+                                    elseif (strpos($displayStatus, 'songs left') !== false) $statusClass .= ' songs-left';
+                                    elseif ($displayStatus === 'Done') $statusClass = 'done'; // Override status class for Done
+                                ?>
+                                <div class="song-status <?php echo $statusClass; ?>">
+                                    <?php echo htmlspecialchars($displayStatus); ?>
+                                </div>
+                                <button class="remove-song-btn" onclick="confirmRemoveSong(this, '<?php echo $song['id']; ?>', '<?php echo addslashes($song['title']); ?>')" title="Remove Song" <?php echo ($displayStatus === 'Singing now' || $displayStatus === 'Done') ? 'disabled' : ''; ?>>
+                                    <span class="btn-text">×</span>
+                                    <span class="btn-spinner" style="display: none;">⌛</span>
+                                </button>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
+
+            <div id="full-playlist-section" style="display: none; border-top: 1px solid transparent; padding-top: 10px;">
+                <ul id="full-playlist-songs" class="full-playlist-list">
+                    <!-- Populated via JS -->
+                </ul>
+            </div>
         </section>
     </div>
 
@@ -142,6 +154,7 @@
         // Define global variables for the external script
         window.guestSongs = <?php echo json_encode($guest['songs']); ?>;
         window.activeNotifications = <?php echo json_encode($guest['notifications'] ?? []); ?>;
+        window.currentGuestName = <?php echo json_encode($guest['name']); ?>;
     </script>
     <script src="public/js/guest.js"></script>
 </body>

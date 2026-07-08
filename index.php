@@ -352,6 +352,12 @@ switch ($route) {
         $controller->getNotifications();
         break;
 
+    case 'api/guest_dashboard_data':
+        require_once 'app/Controllers/WelcomeController.php';
+        $controller = new WelcomeController($basePath);
+        $controller->getDashboardData();
+        break;
+
     case 'api/get_requests':
         $controller = new ApiController();
         $controller->getRequests();

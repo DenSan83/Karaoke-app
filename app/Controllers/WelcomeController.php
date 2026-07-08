@@ -688,6 +688,76 @@ class WelcomeController {
         echo json_encode($guest['notifications'] ?? [], JSON_UNESCAPED_UNICODE);
     }
 
+    public function getDashboardData() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['guest_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $guest = $this->guestModel->getById($_SESSION['guest_id']);
+        if (!$guest) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Guest not found'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        // Calculate statuses (logic synced with index/dashboard)
+        require_once 'app/Models/Playlist.php';
+        require_once 'app/Models/PlayerStatus.php';
+        $playlistModel = new Playlist($this->groupId);
+        $statusModel = new PlayerStatus($this->groupId);
+        
+        $playlist = json_decode($playlistModel->getAll(), true) ?? [];
+        $status = $statusModel->get();
+        $currentIndex = $status['current_index'] ?? -1;
+
+        $futureIndices = [];
+        $currentVideoId = null;
+
+        foreach ($playlist as $index => $video) {
+            if ($index == $currentIndex) {
+                $currentVideoId = $video['id'];
+            }
+            if ($index > $currentIndex) {
+                if (!isset($futureIndices[$video['id']])) {
+                    $futureIndices[$video['id']] = $index;
+                }
+            }
+        }
+
+        foreach ($guest['songs'] as &$song) {
+            $baseStatus = $song['status'] ?? 'Waiting';
+            $displayStatus = $baseStatus;
+
+            if ($baseStatus === 'Accepted') {
+                if ($song['id'] === $currentVideoId) {
+                    $displayStatus = "Singing now";
+                } elseif (isset($futureIndices[$song['id']])) {
+                    $dist = $futureIndices[$song['id']] - $currentIndex;
+                    if ($dist === 1) {
+                        $displayStatus = "Coming up";
+                    } else {
+                        $displayStatus = "$dist songs left";
+                    }
+                } else {
+                    $displayStatus = "Done";
+                }
+            } else {
+                // If not Accepted, it might be Waiting or Refused. 
+                // We keep it as is, BUT we should make sure 'Waiting' is capitalized consistently if needed.
+                $displayStatus = $baseStatus;
+            }
+            $song['display_status'] = $displayStatus;
+        }
+
+        echo json_encode([
+            'songs' => $guest['songs'],
+            'notifications' => $guest['notifications'] ?? []
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
     public function searchSongs() {
         header('Content-Type: application/json');
         if (!isset($_SESSION['guest_id'])) {
