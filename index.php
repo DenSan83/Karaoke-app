@@ -112,6 +112,11 @@ switch ($route) {
         $controller->contact();
         break;
 
+    case 'superadmin/access_keys':
+        $controller = new SuperAdminController();
+        $controller->accessKeys();
+        break;
+
     case 'superadmin/logs':
         $controller = new SuperAdminController();
         $controller->logs();
@@ -150,6 +155,11 @@ switch ($route) {
     case 'api/superadmin/bell/reset':
         $controller = new SuperAdminController();
         $controller->resetBellCount();
+        break;
+
+    case 'api/superadmin/get_access_keys':
+        $controller = new SuperAdminController(true); // Bypass superadmin check for this specific API
+        $controller->getAccessKeys();
         break;
 
     case 'admin':

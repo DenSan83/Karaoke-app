@@ -5,19 +5,40 @@ require_once 'app/Models/Group.php';
 class SuperAdminController {
     private $groupModel;
 
-    public function __construct() {
-        if (!isset($_SESSION['user']) || !isset($_SESSION['is_superadmin']) || !$_SESSION['is_superadmin']) {
-            header('Location: login');
-            exit;
+    public function __construct($bypassAuth = false) {
+        if (!$bypassAuth) {
+            if (!isset($_SESSION['user']) || !isset($_SESSION['is_superadmin']) || !$_SESSION['is_superadmin']) {
+                header('Location: login');
+                exit;
+            }
         }
         $this->groupModel = new Group();
     }
 
     public function index() {
         global $basePath;
+        require_once 'app/Models/Settings.php';
         $groups = $this->groupModel->getAll();
         // Ensure $groups is always an array for the view
         if (!is_array($groups)) $groups = [];
+
+        // Enrich groups with access code from settings if table column is empty
+        foreach ($groups as &$group) {
+            if (empty($group['access_code'])) {
+                $settings = new Settings($group['id']);
+                $guestCodes = $settings->get('guest_codes');
+                if ($guestCodes === null) {
+                    $legacyCode = $settings->get('guest_code');
+                    if ($legacyCode) {
+                        $group['access_code'] = $legacyCode;
+                    }
+                } elseif (is_array($guestCodes) && !empty($guestCodes)) {
+                    $group['access_code'] = $guestCodes[0];
+                }
+            }
+        }
+        unset($group);
+
         $data = ['basePath' => $basePath];
         extract($data);
         require_once 'views/superadmin/groups.php';
@@ -38,6 +59,23 @@ class SuperAdminController {
         $data = ['basePath' => $basePath];
         extract($data);
         require_once 'views/superadmin/contact.php';
+    }
+
+    public function accessKeys() {
+        global $basePath;
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $keys = $_POST['access_keys'] ?? '';
+            $settings->set('access_keys_bank', $keys);
+            $success = true;
+        }
+
+        $accessKeys = $settings->get('access_keys_bank', '');
+        $data = ['basePath' => $basePath];
+        extract($data);
+        require_once 'views/superadmin/access_keys.php';
     }
 
     public function logs() {
@@ -62,6 +100,7 @@ class SuperAdminController {
         $validFrom = !empty($data['valid_from']) ? $data['valid_from'] : null;
         $validTo = !empty($data['valid_to']) ? $data['valid_to'] : null;
         $allowFallback = !empty($data['allow_fallback']) ? 1 : 0;
+        $accessCode = !empty($data['access_code']) ? strtoupper($data['access_code']) : null;
 
         if (empty($name) || empty($adminUsername)) {
             echo json_encode(['success' => false, 'message' => 'Name and Admin Username are required']);
@@ -69,13 +108,33 @@ class SuperAdminController {
         }
 
         try {
-            $newGroup = $this->groupModel->create($name, $adminUsername, $durationType, $validFrom, $validTo, $allowFallback);
+            $newGroup = $this->groupModel->create($name, $adminUsername, $durationType, $validFrom, $validTo, $allowFallback, '', '', $accessCode);
         } catch (Throwable $e) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
             return;
         }
         if ($newGroup) {
             $id = $newGroup['id'];
+
+            // Log group creation
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog($id);
+            $sysLog->log('group_created', [
+                'name' => $name,
+                'admin_username' => $adminUsername,
+                'access_code' => $accessCode
+            ]);
+
+            // Sync access_code to Settings if provided
+            if ($accessCode) {
+                require_once 'app/Models/Settings.php';
+                $settings = new Settings($id);
+                $settings->update(function($current) use ($accessCode) {
+                    $current['guest_codes'] = [$accessCode];
+                    unset($current['guest_code']);
+                    return $current;
+                });
+            }
 
             // Initialize files for the new group
             try {
@@ -172,8 +231,49 @@ class SuperAdminController {
 
         if (isset($data['valid_from']) && $data['valid_from'] === '') $data['valid_from'] = null;
         if (isset($data['valid_to']) && $data['valid_to'] === '') $data['valid_to'] = null;
+        if (isset($data['access_code'])) {
+            if ($data['access_code'] === '') {
+                $data['access_code'] = null;
+            } else {
+                $data['access_code'] = strtoupper($data['access_code']);
+            }
+        }
 
         $success = $this->groupModel->update($id, $data);
+        
+        // Log access code change if applicable
+        if ($success && isset($data['access_code'])) {
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog($id);
+            $sysLog->log('access_code_changed', [
+                'new_code' => $data['access_code'],
+                'changed_by' => 'superadmin'
+            ]);
+        }
+
+        // Sync access_code to Settings if updated
+        if ($success && isset($data['access_code'])) {
+            require_once 'app/Models/Settings.php';
+            $settings = new Settings($id);
+            $newCode = $data['access_code'];
+            
+            if ($newCode) {
+                // If there are existing codes, we might want to update the first one or replace all
+                // To keep it simple and consistent with AdminController, we'll replace/set guest_codes
+                $settings->update(function($current) use ($newCode) {
+                    $current['guest_codes'] = [$newCode];
+                    unset($current['guest_code']);
+                    return $current;
+                });
+            } else {
+                $settings->update(function($current) {
+                    $current['guest_codes'] = [];
+                    unset($current['guest_code']);
+                    return $current;
+                });
+            }
+        }
+
         echo json_encode(['success' => $success]);
     }
 
@@ -198,5 +298,26 @@ class SuperAdminController {
         $settings = new Settings('system');
         $settings->set('bell_counter', 0);
         echo json_encode(['success' => true]);
+    }
+
+    public function getAccessKeys() {
+        require_once 'app/Models/Settings.php';
+        $settings = new Settings('system');
+        $rawKeys = $settings->get('access_keys_bank', '');
+        
+        $lines = explode("\n", $rawKeys);
+        $cleanKeys = [];
+        foreach ($lines as $line) {
+            // Remove comments
+            if (strpos($line, '#') !== false) {
+                $line = substr($line, 0, strpos($line, '#'));
+            }
+            $trimmed = trim($line);
+            if ($trimmed !== '') {
+                $cleanKeys[] = $trimmed;
+            }
+        }
+        
+        echo json_encode(['success' => true, 'keys' => $cleanKeys]);
     }
 }

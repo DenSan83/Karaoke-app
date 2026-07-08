@@ -6,6 +6,40 @@
     <title>SuperAdmin - Party Management</title>
     <link rel="stylesheet" href="<?= htmlspecialchars($basePath ?? '') ?>/public/css/admin.css">
     <link rel="stylesheet" href="<?= htmlspecialchars($basePath ?? '') ?>/public/css/superadmin.css">
+    <style>
+        .input-with-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-with-button input {
+            padding-right: 100px !important;
+        }
+        .input-with-button .btn-generate {
+            position: absolute;
+            right: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+            background: var(--primary-color);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            height: 32px;
+            width: 90px;
+            margin-bottom: 10px;
+        }
+        .btn-generate:hover {
+            background-color: #9965f4;
+        }
+        .btn-generate svg {
+            width: 14px;
+            height: 14px;
+        }
+    </style>
 </head>
 <body>
     <div class="bell-container" id="bellBtn" onclick="handleBellClick()">
@@ -30,7 +64,7 @@
                 <span class="icon">+</span> <span class="btn-text">Create Party</span>
             </button>
             
-            <div class="dropdown" style="width: 90%; margin-top: 10px;">
+            <div class="dropdown" style="width: 100%; margin-top: 10px;">
                 <button class="sidebar-btn btn-management" style="width: 100%; text-align: left;">
                     <span class="icon">
                         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -42,6 +76,7 @@
                 </button>
                 <div class="dropdown-content">
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/contact">Edit Contact</a>
+                    <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/access_keys">Access keys bank</a>
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/logs">See logs</a>
                 </div>
             </div>
@@ -91,6 +126,10 @@
                         Admin PIN:
                         <span class="pin-display"><?= $group['admin_pin'] ?></span>
                     </p>
+                    <p>
+                        Access Code:
+                        <span class="pin-display"><?= htmlspecialchars($group['access_code'] ?? 'None') ?></span>
+                    </p>
 
                     <div class="party-actions">
                     </div>
@@ -115,6 +154,16 @@
                 <div class="form-group">
                     <label>Admin Username</label>
                     <input type="text" id="admin_username" placeholder="Unique username for this party" required>
+                </div>
+                <div class="form-group">
+                    <label>Access Code</label>
+                    <div class="input-with-button">
+                        <input type="text" id="access_code" placeholder="Code for guests to join" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
+                        <button type="button" class="btn-generate" onclick="generateCode('access_code')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                            Generate
+                        </button>
+                    </div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="unlimited" checked onchange="toggleDurationFields()">
@@ -162,6 +211,16 @@
                 <div class="form-group">
                     <label>Admin PIN</label>
                     <input type="text" id="edit_admin_pin" required>
+                </div>
+                <div class="form-group">
+                    <label>Access Code</label>
+                    <div class="input-with-button">
+                        <input type="text" id="edit_access_code" placeholder="Code for guests to join" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
+                        <button type="button" class="btn-generate" onclick="generateCode('edit_access_code')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                            Generate
+                        </button>
+                    </div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="edit_unlimited" onchange="toggleEditDurationFields()">
@@ -257,6 +316,36 @@
             } catch (e) { console.error('Error resetting bell:', e); }
         }
 
+        async function generateCode(inputId) {
+            try {
+                const response = await fetch(`${BASE_PATH}/api/superadmin/get_access_keys`);
+                const data = await response.json();
+                
+                if (!data.success || !data.keys || data.keys.length === 0) {
+                    alert('Access Keys Bank is empty. Please add some keys first.');
+                    return;
+                }
+                
+                const randomKey = data.keys[Math.floor(Math.random() * data.keys.length)];
+                
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const yearFull = String(now.getFullYear());
+                const yearShort = yearFull.slice(-2);
+                const hour = String(now.getHours()).padStart(2, '0');
+                
+                const timeComponents = [day, month, yearFull, yearShort, hour];
+                const randomTime = timeComponents[Math.floor(Math.random() * timeComponents.length)];
+                
+                const finalCode = (randomKey + randomTime).toUpperCase();
+                document.getElementById(inputId).value = finalCode;
+            } catch (e) {
+                console.error('Error generating code:', e);
+                alert('Failed to generate code.');
+            }
+        }
+
         // Initial fetch
         fetchBellCount();
         // Poll every 30 seconds
@@ -283,6 +372,7 @@
             document.getElementById('edit_name').value = group.name;
             document.getElementById('edit_admin_username').value = group.admin_username;
             document.getElementById('edit_admin_pin').value = group.admin_pin;
+            document.getElementById('edit_access_code').value = group.access_code || '';
             document.getElementById('edit_unlimited').checked = group.duration_type === 'unlimited';
             document.getElementById('edit_allow_fallback').checked = !!parseInt(group.allow_fallback);
 
@@ -341,6 +431,7 @@
             const data = {
                 name: document.getElementById('name').value,
                 admin_username: document.getElementById('admin_username').value,
+                access_code: document.getElementById('access_code').value,
                 duration_type: document.getElementById('unlimited').checked ? 'unlimited' : 'limited',
                 valid_from: document.getElementById('valid_from').value,
                 valid_to: document.getElementById('valid_to').value,
@@ -378,6 +469,7 @@
                 name: document.getElementById('edit_name').value,
                 admin_username: document.getElementById('edit_admin_username').value,
                 admin_pin: document.getElementById('edit_admin_pin').value,
+                access_code: document.getElementById('edit_access_code').value,
                 duration_type: document.getElementById('edit_unlimited').checked ? 'unlimited' : 'limited',
                 valid_from: document.getElementById('edit_valid_from').value,
                 valid_to: document.getElementById('edit_valid_to').value,

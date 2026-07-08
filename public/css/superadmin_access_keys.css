@@ -1,0 +1,31 @@
+.keys-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+.keys-card {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.keys-textarea {
+    width: calc(100% - 30px);
+    height: 400px;
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #333;
+    background: #2c2c2c;
+    color: var(--text-color);
+    border-radius: 8px;
+    font-family: monospace;
+    resize: vertical;
+    outline: none;
+}
+.keys-textarea:focus {
+    border-color: var(--primary-color);
+}
+.actions-bottom {
+    display: flex;
+    justify-content: flex-end;
+}

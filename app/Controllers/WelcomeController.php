@@ -126,7 +126,7 @@ class WelcomeController {
     public function verifyCode() {
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
-        $code = trim($data['code'] ?? '');
+        $code = strtoupper(trim($data['code'] ?? ''));
         $groupId = $data['group_id'] ?? null;
 
         require_once 'app/Models/Group.php';
@@ -148,9 +148,18 @@ class WelcomeController {
             $allGroups = $groupModel->getAll();
             foreach ($allGroups as $group) {
                 if ($groupModel->isValid($group)) {
+                    // Check direct access_code from groups table
+                    if (!empty($group['access_code']) && strtoupper($group['access_code']) === $code) {
+                        $targetGroup = $group;
+                        break;
+                    }
+                    
                     $settings = new Settings($group['id']);
                     $guestCodes = $settings->get('guest_codes', []);
-                    if (in_array($code, $guestCodes) || $code === $settings->get('hotel_code')) {
+                    // Convert guest codes to upper for comparison
+                    $upperGuestCodes = array_map('strtoupper', $guestCodes);
+                    $hotelCode = $settings->get('hotel_code');
+                    if (in_array($code, $upperGuestCodes) || ($hotelCode && $code === strtoupper($hotelCode))) {
                         $targetGroup = $group;
                         break;
                     }
@@ -197,10 +206,17 @@ class WelcomeController {
         $autoLogin = false;
         $isHotelJoin = false;
         $isDistantInvite = false;
+        
+        // Check group's main access_code
+        if (!empty($targetGroup['access_code']) && strtoupper($targetGroup['access_code']) === $code) {
+            $isValid = true;
+            $_SESSION['used_code'] = $code;
+        }
 
-        if ($guestCodes !== null && is_array($guestCodes)) {
-            // New system is active - strictly check against the list (case sensitive)
-            if (in_array($code, $guestCodes)) {
+        if (!$isValid && $guestCodes !== null && is_array($guestCodes)) {
+            // New system is active - strictly check against the list (case insensitive via uppercase)
+            $upperGuestCodes = array_map('strtoupper', $guestCodes);
+            if (in_array($code, $upperGuestCodes)) {
                 $isValid = true;
                 $_SESSION['used_code'] = $code;
             }
@@ -209,7 +225,7 @@ class WelcomeController {
         // Check for dedicated Hotel code
         if (!$isValid) {
             $hotelCode = $settings->get('hotel_code');
-            if ($hotelCode && $code === $hotelCode) {
+            if ($hotelCode && $code === strtoupper($hotelCode)) {
                 $isValid = true;
                 $isHotelJoin = true;
                 $_SESSION['used_code'] = $code;

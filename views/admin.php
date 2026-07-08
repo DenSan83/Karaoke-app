@@ -153,6 +153,48 @@
     </div>
 </div>
 
+<?php if (isset($showCodeChangeModal) && $showCodeChangeModal): ?>
+<!-- Code Change Mandatory Modal -->
+<div id="codeChangeModal" class="modal visible">
+    <div class="modal-content" style="text-align: center; padding: 40px 20px;">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">Access Code Updated</h2>
+        <p style="font-size: 1.1rem; margin-bottom: 30px; line-height: 1.6;">The guest access code for this party has been updated.<br>Please review the new code and inform your guests if necessary.</p>
+        <div class="modal-actions" style="justify-content: center;">
+            <a href="admin/codes" class="btn-primary" style="text-decoration: none; padding: 12px 30px; font-size: 1rem;">Go to Access Codes</a>
+        </div>
+    </div>
+</div>
+<style>
+    /* Prevent closing this specific modal */
+    #codeChangeModal {
+        background: rgba(0, 0, 0, 0.95); /* Darker background for focus */
+        z-index: 9999;
+    }
+</style>
+<script>
+    // Ensure modal stays open
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('codeChangeModal');
+        if (modal) {
+            // Disable clicking outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    e.stopPropagation();
+                }
+            }, true);
+            
+            // Disable Escape key
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+        }
+    });
+</script>
+<?php endif; ?>
+
 <script>
     const BASE_PATH = <?= json_encode($this->basePath ?? '') ?>;
     window.MUST_HAVE_WORDS = <?= json_encode($group['must_have_words'] ?? '') ?>;

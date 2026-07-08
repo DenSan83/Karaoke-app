@@ -36,7 +36,8 @@
                         }
                     ?>
                     <input type="text" id="invite-code" class="welcome-input" placeholder="Enter code..." 
-                           value="<?php echo htmlspecialchars($inviteCode); ?>">
+                           value="<?php echo htmlspecialchars(strtoupper($inviteCode)); ?>"
+                           style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
                 </div>
                 <button id="verify-btn" class="welcome-btn">Enter Party</button>
                 <div id="error-1" class="error-message"></div>

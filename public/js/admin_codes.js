@@ -206,6 +206,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const generateBtn = document.getElementById('generate-btn');
+    if (generateBtn && guestCodeInput) {
+        generateBtn.addEventListener('click', async () => {
+            try {
+                generateBtn.disabled = true;
+                const originalContent = generateBtn.innerHTML;
+                generateBtn.textContent = '...';
+
+                // We need basePath here. admin_codes.php has <base href="<?= htmlspecialchars($basePath) ?>/">
+                // So we can use relative path or absolute if we can find it.
+                // In groups.php it used BASE_PATH global.
+                // Let's try to get it from the base tag if needed, but 'api/superadmin/get_access_keys' should work if base is set.
+                
+                const response = await fetch('api/superadmin/get_access_keys');
+                const data = await response.json();
+                
+                if (!data.success || !data.keys || data.keys.length === 0) {
+                    alert('Access Keys Bank is empty. Please contact SuperAdmin.');
+                    return;
+                }
+                
+                const randomKey = data.keys[Math.floor(Math.random() * data.keys.length)];
+                
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const yearFull = String(now.getFullYear());
+                const yearShort = yearFull.slice(-2);
+                const hour = String(now.getHours()).padStart(2, '0');
+                
+                const timeComponents = [day, month, yearFull, yearShort, hour];
+                const randomTime = timeComponents[Math.floor(Math.random() * timeComponents.length)];
+                
+                const finalCode = (randomKey + randomTime).toUpperCase();
+                guestCodeInput.value = finalCode;
+                
+                // Trigger events
+                checkChanges();
+                updateQRCode();
+                
+                generateBtn.innerHTML = originalContent;
+            } catch (e) {
+                console.error('Error generating code:', e);
+                alert('Failed to generate code.');
+            } finally {
+                generateBtn.disabled = false;
+            }
+        });
+    }
+
     // Initial Render
     updateQRCode();
     checkChanges();

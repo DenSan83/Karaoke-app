@@ -41,10 +41,16 @@
                 </div>
 
                 <div class="add-form">
-                    <input type="text" id="guest-code" class="new-code-input" placeholder="Enter code (e.g. PARTY2026)" value="<?= htmlspecialchars($guestCodes[0] ?? '') ?>">
+                    <input type="text" id="guest-code" class="new-code-input" placeholder="Enter code (e.g. PARTY2026)" value="<?= htmlspecialchars($guestCodes[0] ?? '') ?>" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
                 </div>
 
-                <button id="save-btn" class="save-btn">Save Code</button>
+                <div class="actions-row">
+                    <button type="button" id="generate-btn" class="btn-generate">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                        Generate
+                    </button>
+                    <button id="save-btn" class="save-btn">Save Code</button>
+                </div>
                 <div id="msg" class="msg"></div>
             </div>
         </main>

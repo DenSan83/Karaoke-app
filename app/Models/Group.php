@@ -21,15 +21,15 @@ class Group {
         return $this->db->fetch("SELECT * FROM `groups` WHERE admin_username = ?", [$username]);
     }
 
-    public function create($name, $admin_username, $duration_type, $valid_from = null, $valid_to = null, $allow_fallback = 0, $must_have_words = '', $must_not_have_words = '') {
+    public function create($name, $admin_username, $duration_type, $valid_from = null, $valid_to = null, $allow_fallback = 0, $must_have_words = '', $must_not_have_words = '', $access_code = null) {
         $groups = $this->getAll();
         $id = $this->generateUniqueId($groups, 4);
         $pin = $this->generateUniquePin($groups, 6);
 
-        $sql = "INSERT INTO `groups` (id, name, admin_username, admin_pin, duration_type, valid_from, valid_to, created_at, allow_fallback, must_have_words, must_not_have_words)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `groups` (id, name, admin_username, admin_pin, access_code, duration_type, valid_from, valid_to, created_at, allow_fallback, must_have_words, must_not_have_words)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $createdAt = time();
-        $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0, $must_have_words, $must_not_have_words]);
+        $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $access_code, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0, $must_have_words, $must_not_have_words]);
 
         if ($success) {
             return [
@@ -37,6 +37,7 @@ class Group {
                 'name' => $name,
                 'admin_username' => $admin_username,
                 'admin_pin' => $pin,
+                'access_code' => $access_code,
                 'duration_type' => $duration_type,
                 'valid_from' => $valid_from,
                 'valid_to' => $valid_to,

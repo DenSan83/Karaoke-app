@@ -37,20 +37,40 @@ class AdminController {
         require_once 'app/Models/Group.php';
         $groupModel = new Group();
         $group = $groupModel->getById($this->groupId);
-        
+
         $data = [
             'basePath' => $this->basePath,
             'partyName' => $this->partyName,
-            'group' => $group
+            'group' => $group,
+            'showCodeChangeModal' => $this->shouldShowCodeChangeModal()
         ];
         extract($data);
         require_once 'views/admin.php';
     }
 
+    private function shouldShowCodeChangeModal() {
+        require_once 'app/Models/Group.php';
+        $groupModel = new Group();
+        $group = $groupModel->getById($this->groupId);
+
+        require_once 'app/Models/SystemLog.php';
+        $sysLog = new SystemLog($this->groupId);
+        $logs = $sysLog->getLogs('code_seen');
+        $currentCode = $group['access_code'] ?? '';
+
+        foreach ($logs as $log) {
+            if (isset($log['data']['access_code']) && $log['data']['access_code'] === $currentCode) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public function requests() {
         $data = [
             'basePath' => $this->basePath,
-            'partyName' => $this->partyName
+            'partyName' => $this->partyName,
+            'showCodeChangeModal' => $this->shouldShowCodeChangeModal()
         ];
         extract($data);
         require_once 'views/admin_requests.php';
@@ -59,7 +79,8 @@ class AdminController {
     public function logs() {
         $data = [
             'basePath' => $this->basePath,
-            'partyName' => $this->partyName
+            'partyName' => $this->partyName,
+            'showCodeChangeModal' => $this->shouldShowCodeChangeModal()
         ];
         extract($data);
         require_once 'app/Models/SystemLog.php';
@@ -199,6 +220,28 @@ class AdminController {
             $guestCodes = [reset($guestCodes)];
         }
 
+        // Create log entry that admin has seen the codes page (acknowledgment)
+        if (!empty($guestCodes)) {
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog($this->groupId);
+            $currentCode = $guestCodes[0];
+            $logs = $sysLog->getLogs('code_seen');
+            $alreadyLogged = false;
+            foreach ($logs as $log) {
+                if (isset($log['data']['access_code']) && $log['data']['access_code'] === $currentCode) {
+                    $alreadyLogged = true;
+                    break;
+                }
+            }
+            if (!$alreadyLogged) {
+                $sysLog->log('code_seen', [
+                    'access_code' => $currentCode,
+                    'timestamp' => time(),
+                    'username' => $_SESSION['user'] ?? 'unknown'
+                ]);
+            }
+        }
+
         $allowNewSessions = $settings->get('allow_new_sessions', true);
 
         $data = [
@@ -226,8 +269,10 @@ class AdminController {
             }
         }
 
-        // Filter empty
-        $codes = array_filter(array_map('trim', $codes));
+        // Filter empty and convert to uppercase
+        $codes = array_filter(array_map(function($c) {
+            return strtoupper(trim($c));
+        }, $codes));
         $codes = array_values($codes); // Re-index
 
         require_once 'app/Models/Settings.php';
@@ -240,6 +285,24 @@ class AdminController {
             unset($current['category']);
             return $current;
         })) {
+            // Log access code change
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog($this->groupId);
+            $sysLog->log('access_code_changed', [
+                'new_codes' => $codes,
+                'changed_by' => 'admin'
+            ]);
+
+            // Also sync to groups table if it's the primary code
+            if (!empty($codes)) {
+                require_once 'app/Models/Group.php';
+                $groupModel = new Group();
+                $groupModel->update($this->groupId, ['access_code' => $codes[0]]);
+            } else {
+                require_once 'app/Models/Group.php';
+                $groupModel = new Group();
+                $groupModel->update($this->groupId, ['access_code' => null]);
+            }
             echo json_encode(['success' => true, 'codes' => $codes]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Failed to save codes']);

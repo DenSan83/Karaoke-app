@@ -119,7 +119,7 @@
 }
 
 .save-btn {
-    width: 100%;
+    flex: 1;
     padding: 15px;
     background: var(--primary-color);
     color: #000;
@@ -129,6 +129,44 @@
     font-size: 1.1rem;
     cursor: pointer;
     transition: all 0.2s;
+}
+
+.actions-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-generate {
+    flex: 1;
+    padding: 0 20px;
+    background: #333;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+    height: 53px; /* Match save-btn height approximately */
+}
+
+.btn-generate:hover {
+    background: #444;
+}
+
+.btn-generate svg {
+    width: 18px;
+    height: 18px;
+}
+
+@media (max-width: 480px) {
+    .actions-row {
+        flex-direction: column;
+    }
 }
 
 .save-btn:hover {

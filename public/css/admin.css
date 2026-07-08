@@ -109,6 +109,7 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     flex-shrink: 0;
     text-decoration: none;
+    width: 100%;
 }
 
 .sidebar-btn .icon {
@@ -129,6 +130,7 @@ body {
     text-decoration: none;
     margin-bottom: 20px;
     margin-top: auto;
+    width: 100%;
 }
 
 .logout-btn:hover {
