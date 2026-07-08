@@ -64,6 +64,113 @@ require_once 'app/Controllers/AdminController.php';
 require_once 'app/Controllers/ApiController.php';
 require_once 'app/Controllers/AuthController.php';
 require_once 'app/Controllers/SuperAdminController.php';
+require_once 'app/Controllers/WelcomeController.php';
+
+// Activity Tracking & Ban Check
+if (!empty($_SESSION) || isset($_COOKIE['karaoke_client_id'])) {
+    require_once 'app/Models/ClientLog.php';
+    $clientLog = new ClientLog();
+    $clientId = $_COOKIE['karaoke_client_id'] ?? null;
+
+    // Check if client is banned
+    if ($clientId && $clientLog->isBanned($clientId)) {
+        // If they are trying to access anything other than root or login with banned status, block them
+        $allowed_banned_routes = ['', 'login', 'superadmin/login'];
+
+        // Only log if they are NOT on an allowed route (meaning they are trying to access something they shouldn't)
+        // and we haven't logged this specific route in the last 30 seconds to avoid redirect loops spam
+        $last_banned_log = $_SESSION['last_banned_log'] ?? 0;
+        $last_banned_route = $_SESSION['last_banned_route'] ?? '';
+
+        if (!in_array($route, $allowed_banned_routes) && ($route !== $last_banned_route || (time() - $last_banned_log > 30))) {
+            $_SESSION['last_banned_log'] = time();
+            $_SESSION['last_banned_route'] = $route;
+
+            // Log the banned try
+            $banDetails = $clientLog->getBanDetails($clientId);
+            $groupName = 'Unknown';
+            if ($banDetails && $banDetails['group_id'] !== 'system') {
+                require_once 'app/Models/Group.php';
+                $groupModel = new Group();
+                $group = $groupModel->getById($banDetails['group_id']);
+                if ($group) {
+                    $groupName = $group['name'];
+                }
+            } elseif ($banDetails && $banDetails['group_id'] === 'system') {
+                $groupName = 'SuperAdmin';
+            }
+
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog('system');
+            
+            $params = $_REQUEST;
+            // Capture JSON body if present
+            $jsonInput = json_decode(file_get_contents('php://input'), true);
+            if ($jsonInput) {
+                $params = array_merge($params, $jsonInput);
+            }
+
+            $sysLog->log('BANNED_TRY', [
+                'client_id' => $clientId,
+                'method' => $_SERVER['REQUEST_METHOD'],
+                'params' => $params,
+                'group_name' => $groupName,
+                'banned_since' => $banDetails['banned_at'] ?? 'Unknown'
+            ]);
+        }
+        
+        if (!empty($_SESSION)) {
+            // Keep the error flag
+            $_SESSION['banned_error'] = true;
+            
+            // Remove identification data to prevent controllers from redirecting
+            unset($_SESSION['guest_id']);
+            unset($_SESSION['group_id']);
+            unset($_SESSION['is_superadmin']);
+            unset($_SESSION['user']);
+            
+            session_write_close();
+            
+            // Only redirect if NOT already on an allowed banned route
+            if (!in_array($route, $allowed_banned_routes)) {
+                header('Location: ' . ($basePath ?: '') . '/');
+                exit;
+            }
+        } elseif (!in_array($route, $allowed_banned_routes)) {
+            header('Location: ' . ($basePath ?: '') . '/');
+            exit;
+        }
+    }
+
+    if (!empty($_SESSION)) {
+        $track_groupId = $_SESSION['group_id'] ?? null;
+        $track_type = null;
+        $track_identity = $_SESSION['user'] ?? null;
+
+        if (isset($_SESSION['is_superadmin']) && $_SESSION['is_superadmin']) {
+            $track_groupId = 'system';
+            $track_type = 'superadmin';
+        } elseif ($track_groupId && isset($_SESSION['user'])) {
+            $track_type = 'admin';
+        } elseif (isset($_SESSION['guest_id'])) {
+            // Priority to guest_id_group which is specifically set for connection logging
+            $track_groupId = $_SESSION['guest_id_group'] ?? $_SESSION['group_id'] ?? null;
+            $track_type = 'guest';
+            if (isset($_SESSION['guest_name'])) {
+                 $track_identity = $_SESSION['guest_name'];
+            }
+        }
+
+        // Only update activity if we are not on the logout route or logging out
+        $isLogoutRoute = (strpos($route, 'logout') !== false);
+        if ($track_groupId && $track_type && $track_identity && 
+            !$isLogoutRoute && 
+            !isset($_SESSION['is_logging_out']) &&
+            !isset($_GET['logging_out'])) {
+            $clientLog->updateActivity($track_groupId, $track_type, $track_identity);
+        }
+    }
+}
 
 // Check for group session validity
 if (isset($_SESSION['group_id']) && !isset($_SESSION['is_superadmin'])) {
@@ -92,7 +199,6 @@ if (isset($_SESSION['group_id']) && !isset($_SESSION['is_superadmin'])) {
 switch ($route) {
     case '/':
     case '':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->index();
         break;
@@ -120,6 +226,31 @@ switch ($route) {
     case 'superadmin/logs':
         $controller = new SuperAdminController();
         $controller->logs();
+        break;
+
+    case 'superadmin/clients':
+        $controller = new SuperAdminController();
+        $controller->clients();
+        break;
+
+    case 'superadmin/clear_clients':
+        $controller = new SuperAdminController();
+        $controller->clearClients();
+        break;
+
+    case 'superadmin/delete_client':
+        $controller = new SuperAdminController();
+        $controller->deleteClient();
+        break;
+
+    case 'superadmin/ban_client':
+        $controller = new SuperAdminController();
+        $controller->banClient();
+        break;
+
+    case 'superadmin/unban_client':
+        $controller = new SuperAdminController();
+        $controller->unbanClient();
         break;
 
     case 'api/superadmin/create_group':
@@ -228,6 +359,11 @@ switch ($route) {
         break;
 
     case 'login':
+        // If already logged in, redirect based on role
+        if (isset($_SESSION['group_id'])) {
+            header('Location: ' . ($basePath ?: '') . (isset($_SESSION['is_superadmin']) && $_SESSION['is_superadmin'] ? '/superadmin' : '/admin'));
+            exit;
+        }
         $controller = new AuthController($basePath);
         $controller->index();
         break;
@@ -291,7 +427,6 @@ switch ($route) {
         break;
 
     case 'guest':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->dashboard();
         break;
@@ -315,55 +450,46 @@ switch ($route) {
         break;
 
     case 'api/verify-code':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->verifyCode();
         break;
 
     case 'api/add-guest':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->addGuest();
         break;
 
     case 'api/guest_reorder':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->reorderSongs();
         break;
 
     case 'api/guest_add_song':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->guestAddSong();
         break;
 
     case 'api/guest_join':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->joinSinger();
         break;
 
     case 'api/guest_remove_song':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->removeGuestSong();
         break;
 
     case 'api/guest_dismiss_notification':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->dismissNotification();
         break;
 
     case 'api/guest_notifications':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->getNotifications();
         break;
 
     case 'api/guest_dashboard_data':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->getDashboardData();
         break;
@@ -404,7 +530,6 @@ switch ($route) {
         break;
 
     case 'api/search_songs':
-        require_once 'app/Controllers/WelcomeController.php';
         $controller = new WelcomeController($basePath);
         $controller->searchSongs();
         break;

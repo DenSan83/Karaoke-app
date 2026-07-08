@@ -1,0 +1,170 @@
+<?php
+
+require_once 'app/Services/Database.php';
+
+class ClientLog {
+    private $db;
+
+    public function __construct() {
+        $this->db = Database::getInstance();
+    }
+
+    public function logConnection($groupId, $type, $identity = null) {
+        if (!$groupId) return false;
+
+        $clientId = $this->getOrCreateClientId();
+        
+        $metadata = [
+            'client_id' => $clientId,
+            'browser' => $this->getBrowserInfo(),
+            'device' => $this->getDeviceType(),
+            'language' => $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? 'unknown',
+            'ip_address' => $this->getIpAddress()
+        ];
+
+        // Add fingerprint from session if available
+        if (isset($_SESSION['guest_fingerprint'])) {
+            $metadata['fingerprint'] = $_SESSION['guest_fingerprint'];
+        }
+
+        $sql = "INSERT INTO `client_connections` (group_id, client_id, type, identity, last_activity, is_online, data) 
+                VALUES (?, ?, ?, ?, NOW(), 1, ?)
+                ON DUPLICATE KEY UPDATE 
+                last_activity = NOW(),
+                is_online = 1,
+                data = VALUES(data),
+                created_at = CURRENT_TIMESTAMP";
+        return $this->db->query($sql, [$groupId, $clientId, $type, $identity, json_encode($metadata)]);
+    }
+
+    public function updateActivity($groupId, $type, $identity) {
+        if (!$groupId) return false;
+        $clientId = $this->getOrCreateClientId();
+        $sql = "UPDATE `client_connections` 
+                SET last_activity = NOW(), is_online = 1 
+                WHERE group_id = ? AND client_id = ? AND type = ? AND identity = ?";
+        return $this->db->query($sql, [$groupId, $clientId, $type, $identity]);
+    }
+
+    public function logout($groupId, $type, $identity) {
+        if (!$groupId) return false;
+        $clientId = $this->getOrCreateClientId();
+        $sql = "UPDATE `client_connections` 
+                SET is_online = 0 
+                WHERE group_id = ? AND client_id = ? AND type = ? AND identity = ?";
+        return $this->db->query($sql, [$groupId, $clientId, $type, $identity]);
+    }
+
+    private function getIpAddress() {
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+            // If multiple IPs, take the first one
+            if (strpos($ip, ',') !== false) {
+                $ip = trim(explode(',', $ip)[0]);
+            }
+        } else {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        }
+        return $ip;
+    }
+
+    public function getConnectionsByGroup($groupId) {
+        $sql = "SELECT client_id, group_id, type, 
+                       JSON_ARRAYAGG(JSON_OBJECT('identity', identity, 'is_online', is_online, 'last_activity', last_activity)) as identities_json,
+                       MAX(created_at) as created_at,
+                       MAX(last_activity) as max_last_activity,
+                       MAX(is_banned) as is_banned,
+                       data 
+                FROM (
+                    SELECT * FROM `client_connections` 
+                    WHERE group_id = ? 
+                    ORDER BY created_at DESC
+                ) as sub 
+                GROUP BY client_id 
+                ORDER BY created_at DESC";
+        return $this->db->fetchAll($sql, [$groupId]);
+    }
+
+    public function getAllClients() {
+        $sql = "SELECT client_id, group_id, type, 
+                       JSON_ARRAYAGG(JSON_OBJECT('identity', identity, 'is_online', is_online, 'last_activity', last_activity)) as identities_json,
+                       MAX(created_at) as created_at,
+                       MAX(last_activity) as max_last_activity,
+                       MAX(is_banned) as is_banned,
+                       data 
+                FROM (
+                    SELECT * FROM `client_connections` 
+                    ORDER BY created_at DESC
+                ) as sub 
+                GROUP BY client_id, group_id
+                ORDER BY created_at DESC";
+        return $this->db->fetchAll($sql);
+    }
+
+    public function clearConnectionsByGroup($groupId) {
+        if (!$groupId) return false;
+        $sql = "DELETE FROM `client_connections` WHERE group_id = ?";
+        return $this->db->query($sql, [$groupId]);
+    }
+
+    public function deleteClient($clientId, $groupId) {
+        if (!$clientId || !$groupId) return false;
+        $sql = "DELETE FROM `client_connections` WHERE client_id = ? AND group_id = ?";
+        return $this->db->query($sql, [$clientId, $groupId]);
+    }
+
+    public function banClient($clientId) {
+        if (!$clientId) return false;
+        // Mark as offline and banned for all entries of this client
+        $sql = "UPDATE `client_connections` SET is_banned = 1, is_online = 0, banned_at = NOW() WHERE client_id = ?";
+        return $this->db->query($sql, [$clientId]);
+    }
+
+    public function unbanClient($clientId) {
+        if (!$clientId) return false;
+        $sql = "UPDATE `client_connections` SET is_banned = 0, banned_at = NULL WHERE client_id = ?";
+        return $this->db->query($sql, [$clientId]);
+    }
+
+    public function isBanned($clientId) {
+        if (!$clientId) return false;
+        $sql = "SELECT COUNT(*) as count FROM `client_connections` WHERE client_id = ? AND is_banned = 1";
+        $result = $this->db->fetch($sql, [$clientId]);
+        return ($result['count'] ?? 0) > 0;
+    }
+
+    public function getBanDetails($clientId) {
+        if (!$clientId) return null;
+        $sql = "SELECT group_id, banned_at FROM `client_connections` WHERE client_id = ? AND is_banned = 1 LIMIT 1";
+        return $this->db->fetch($sql, [$clientId]);
+    }
+
+    public function getOrCreateClientId() {
+        if (!isset($_COOKIE['karaoke_client_id'])) {
+            $clientId = bin2hex(random_bytes(16));
+            setcookie('karaoke_client_id', $clientId, time() + (86400 * 365), "/");
+            $_COOKIE['karaoke_client_id'] = $clientId;
+        }
+        return $_COOKIE['karaoke_client_id'];
+    }
+
+    private function getBrowserInfo() {
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+        if (preg_match('/MSIE/i', $ua) && !preg_match('/Opera/i', $ua)) return 'Internet Explorer';
+        if (preg_match('/Firefox/i', $ua)) return 'Firefox';
+        if (preg_match('/Chrome/i', $ua)) return 'Chrome';
+        if (preg_match('/Safari/i', $ua)) return 'Safari';
+        if (preg_match('/Opera/i', $ua)) return 'Opera';
+        if (preg_match('/Netscape/i', $ua)) return 'Netscape';
+        return 'Unknown';
+    }
+
+    private function getDeviceType() {
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+        if (preg_match('/mobile/i', $ua)) return 'Mobile';
+        if (preg_match('/tablet/i', $ua)) return 'Tablet';
+        return 'Desktop';
+    }
+}

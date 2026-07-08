@@ -34,6 +34,17 @@ class AdminController {
     }
 
     public function index() {
+        if ($this->groupId) {
+            // Log connection for admin if not already logged in this session
+            if (!isset($_SESSION['admin_logged_' . $this->groupId])) {
+                require_once 'app/Models/ClientLog.php';
+                $clientLog = new ClientLog();
+                $identity = $_SESSION['user'] ?? 'admin';
+                $clientLog->logConnection($this->groupId, 'admin', $identity);
+                $_SESSION['admin_logged_' . $this->groupId] = true;
+            }
+        }
+
         require_once 'app/Models/Group.php';
         $groupModel = new Group();
         $group = $groupModel->getById($this->groupId);
@@ -55,14 +66,40 @@ class AdminController {
 
         require_once 'app/Models/SystemLog.php';
         $sysLog = new SystemLog($this->groupId);
-        $logs = $sysLog->getLogs('code_seen');
+        
+        // 1. Check if any code_seen log matches the CURRENT code
+        // If the admin has already acknowledged this specific code, don't show modal.
+        $seenLogs = $sysLog->getLogs('code_seen');
         $currentCode = $group['access_code'] ?? '';
-
-        foreach ($logs as $log) {
+        
+        foreach ($seenLogs as $log) {
             if (isset($log['data']['access_code']) && $log['data']['access_code'] === $currentCode) {
                 return false;
             }
         }
+
+        // 2. Check if there was an access code change
+        $changeLogs = $sysLog->getLogs('access_code_changed');
+        if (empty($changeLogs)) {
+            // No changes recorded yet
+            return false;
+        }
+
+        $lastChange = reset($changeLogs);
+        $lastChangeTime = $lastChange['timestamp'] ?? 0;
+
+        // 3. Check for the LATEST code_seen (regardless of which code)
+        if (!empty($seenLogs)) {
+            $lastSeen = reset($seenLogs);
+            $lastSeenTime = $lastSeen['timestamp'] ?? 0;
+
+            // If we have seen the codes page AFTER the last change was made,
+            // we consider the admin informed.
+            if ($lastSeenTime >= $lastChangeTime) {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -290,7 +327,8 @@ class AdminController {
             $sysLog = new SystemLog($this->groupId);
             $sysLog->log('access_code_changed', [
                 'new_codes' => $codes,
-                'changed_by' => 'admin'
+                'changed_by' => 'admin',
+                'timestamp' => time()
             ]);
 
             // Also sync to groups table if it's the primary code

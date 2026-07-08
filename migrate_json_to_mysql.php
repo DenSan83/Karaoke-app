@@ -110,6 +110,20 @@ function runMigration() {
             paired_at INT NULL,
             UNIQUE KEY (public_code),
             INDEX (group_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+        'client_connections' => "CREATE TABLE IF NOT EXISTS `client_connections` (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            group_id VARCHAR(10) NOT NULL,
+            client_id VARCHAR(50) NOT NULL,
+            type VARCHAR(20) NOT NULL, -- 'admin', 'screen', 'guest'
+            identity VARCHAR(255),     -- admin username, guest stage names, or 'screen'
+            data LONGTEXT,             -- JSON: browser, device, language, ip_address
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            banned_at DATETIME NULL,
+            INDEX (group_id),
+            INDEX (client_id),
+            UNIQUE KEY (group_id, client_id, type, identity)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
     ];
 
@@ -118,6 +132,11 @@ function runMigration() {
             $pdo->exec($sql);
             if ($isCli) echo "Table '$name' checked/created.\n";
             error_log("Migration: Table '$name' checked/created.");
+
+            // Special handling for schema updates on client_connections
+            if ($name === 'client_connections') {
+                updateClientConnectionsSchema($pdo, $isCli);
+            }
         } catch (Exception $e) {
             $msg = "Error creating table '$name': " . $e->getMessage();
             if ($isCli) echo $msg . "\n";
@@ -210,6 +229,87 @@ function runMigration() {
 
     if ($isCli) echo "Migration finished.\n";
     return true;
+}
+
+function updateClientConnectionsSchema($pdo, $isCli) {
+    // Check if identity column exists
+    $stmt = $pdo->query("SHOW COLUMNS FROM `client_connections` LIKE 'identity'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'identity' column to 'client_connections'...\n";
+        $pdo->exec("ALTER TABLE `client_connections` ADD COLUMN identity VARCHAR(255) AFTER type");
+    }
+
+    // Check if last_activity column exists
+    $stmt = $pdo->query("SHOW COLUMNS FROM `client_connections` LIKE 'last_activity'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'last_activity' column to 'client_connections'...\n";
+        $pdo->exec("ALTER TABLE `client_connections` ADD COLUMN last_activity DATETIME DEFAULT CURRENT_TIMESTAMP AFTER identity");
+    }
+
+    // Check if is_online column exists
+    $stmt = $pdo->query("SHOW COLUMNS FROM `client_connections` LIKE 'is_online'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'is_online' column to 'client_connections'...\n";
+        $pdo->exec("ALTER TABLE `client_connections` ADD COLUMN is_online TINYINT(1) DEFAULT 1 AFTER last_activity");
+    }
+
+    // Check if is_banned column exists
+    $stmt = $pdo->query("SHOW COLUMNS FROM `client_connections` LIKE 'is_banned'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'is_banned' column to 'client_connections'...\n";
+        $pdo->exec("ALTER TABLE `client_connections` ADD COLUMN is_banned TINYINT(1) DEFAULT 0 AFTER is_online");
+    }
+
+    // Check if banned_at column exists
+    $stmt = $pdo->query("SHOW COLUMNS FROM `client_connections` LIKE 'banned_at'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'banned_at' column to 'client_connections'...\n";
+        $pdo->exec("ALTER TABLE `client_connections` ADD COLUMN banned_at DATETIME NULL AFTER is_banned");
+    }
+
+    // Check if data column exists
+    $stmt = $pdo->query("SHOW COLUMNS FROM `client_connections` LIKE 'data'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'data' column to 'client_connections'...\n";
+        $pdo->exec("ALTER TABLE `client_connections` ADD COLUMN data LONGTEXT AFTER identity");
+
+        // Optional: migrate old columns to JSON if they exist
+        $stmt = $pdo->query("SHOW COLUMNS FROM `client_connections` LIKE 'browser'");
+        if ($stmt->rowCount() > 0) {
+            if ($isCli) echo "  Migrating old columns to 'data' JSON...\n";
+            $pdo->exec("UPDATE `client_connections` SET data = JSON_OBJECT(
+                'browser', browser,
+                'device', device,
+                'language', language,
+                'ip_address', ip_address
+            ) WHERE data IS NULL");
+            
+            // Drop old columns
+            $pdo->exec("ALTER TABLE `client_connections` 
+                DROP COLUMN browser,
+                DROP COLUMN device,
+                DROP COLUMN language,
+                DROP COLUMN ip_address");
+        }
+    }
+
+    // Check if unique key exists for (group_id, client_id, type, identity)
+    $stmt = $pdo->query("SHOW INDEX FROM `client_connections` WHERE Key_name = 'unique_connection'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding unique constraint to 'client_connections'...\n";
+        
+        // Before adding the unique constraint, we must remove duplicates or the ALTER TABLE will fail.
+        // We keep the row with the most recent created_at for each group/client/type/identity combination.
+        $pdo->exec("DELETE c1 FROM client_connections c1
+                   INNER JOIN client_connections c2 
+                   WHERE c1.id < c2.id 
+                   AND c1.group_id = c2.group_id 
+                   AND c1.client_id = c2.client_id 
+                   AND c1.type = c2.type 
+                   AND (c1.identity = c2.identity OR (c1.identity IS NULL AND c2.identity IS NULL))");
+
+        $pdo->exec("ALTER TABLE `client_connections` ADD UNIQUE KEY `unique_connection` (group_id, client_id, type, identity)");
+    }
 }
 
 // Migration Logic

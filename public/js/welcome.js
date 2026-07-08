@@ -72,12 +72,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = nameInput.value.trim();
             if (!name) return;
 
+            const fingerprint = {
+                ua: navigator.userAgent,
+                lang: navigator.language,
+                screen: `${window.screen.width}x${window.screen.height}`,
+                tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                mem: navigator.deviceMemory || 'unknown'
+            };
+
             try {
                 const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/add-guest';
                 const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name })
+                    body: JSON.stringify({ name, fingerprint })
                 });
                 const data = await res.json();
                 if (data.success) {

@@ -421,8 +421,15 @@ body {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
 }
+.badge-danger {
+    background: rgba(207, 102, 121, 0.2);
+    color: var(--error-color);
+}
 pre {
     margin: 0;
+    background: #000;
+    color: #0f0;
+    padding: 10px;
     font-family: monospace;
     font-size: 0.9em;
     white-space: pre-wrap;

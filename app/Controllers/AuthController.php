@@ -30,6 +30,15 @@ class AuthController {
         $authenticated = false;
         $isSuperAdmin = false;
 
+        // Check if banned
+        require_once 'app/Models/ClientLog.php';
+        $clientLog = new ClientLog();
+        $clientId = $_COOKIE['karaoke_client_id'] ?? null;
+        if ($clientId && $clientLog->isBanned($clientId)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid credentials']);
+            return;
+        }
+
         // Check superadmin first
         foreach ($users as $line) {
             $parts = explode(':', $line, 2);
@@ -87,13 +96,21 @@ class AuthController {
     }
 
     public function logout() {
+        // Log logout before clearing session
+        require_once 'app/Models/ClientLog.php';
+        $clientLog = new ClientLog();
+
         $guestId = $_SESSION['guest_id'] ?? null;
         $groupId = $_SESSION['group_id'] ?? null;
         
         if ($guestId) {
-            // 1. Remove from guests.json
             require_once 'app/Models/Guest.php';
             $guestModel = new Guest($groupId);
+            $guest = $guestModel->getById($guestId);
+            $identity = $guest['name'] ?? 'guest';
+            $clientLog->logout($groupId, 'guest', $identity);
+
+            // 1. Remove from guests.json
             $guestModel->remove($guestId);
 
             // 2. Remove activity logs
@@ -103,9 +120,29 @@ class AuthController {
             
             $redirect = ($this->basePath ?: '') . '/';
         } else {
+            $isSuperAdmin = $_SESSION['is_superadmin'] ?? false;
+            $identity = $_SESSION['user'] ?? ($isSuperAdmin ? 'superadmin' : 'admin');
+            $type = $isSuperAdmin ? 'superadmin' : 'admin';
+            $logGroupId = $isSuperAdmin ? 'system' : ($groupId ?? 'default');
+            
+            // Log logout to ClientLog
+            $clientLog->logout($logGroupId, $type, $identity);
+
+            // Also log to SystemLog for admins
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog($logGroupId);
+            $sysLog->log('user_logout', [
+                'username' => $identity,
+                'role' => $type,
+                'timestamp' => time()
+            ]);
+
             $redirect = ($this->basePath ?: '') . '/login';
         }
 
+        // Add a temporary flag to session to prevent index.php from re-marking as online
+        $_SESSION['is_logging_out'] = true;
+        
         // Ensure we don't have double slashes if basePath is empty but we added one
         if (strpos($redirect, '//') === 0 && strpos($redirect, '///') !== 0) {
             $redirect = '/' . ltrim($redirect, '/');
@@ -120,7 +157,7 @@ class AuthController {
             );
         }
         session_destroy();
-        header('Location: ' . $redirect);
+        header('Location: ' . $redirect . (strpos($redirect, '?') === false ? '?' : '&') . 'logging_out=1');
         exit;
     }
 }

@@ -16,6 +16,15 @@ class SuperAdminController {
     }
 
     public function index() {
+        // Log connection for superadmin if not already logged in this session
+        if (!isset($_SESSION['superadmin_logged'])) {
+            require_once 'app/Models/ClientLog.php';
+            $clientLog = new ClientLog();
+            $identity = $_SESSION['user'] ?? 'superadmin';
+            $clientLog->logConnection('system', 'superadmin', $identity);
+            $_SESSION['superadmin_logged'] = true;
+        }
+
         global $basePath;
         require_once 'app/Models/Settings.php';
         $groups = $this->groupModel->getAll();
@@ -90,6 +99,83 @@ class SuperAdminController {
         $data = ['basePath' => $basePath];
         extract($data);
         require_once 'views/superadmin/logs.php';
+    }
+
+    public function clients() {
+        global $basePath;
+        require_once 'app/Models/ClientLog.php';
+        require_once 'app/Models/Group.php';
+        
+        $clientLog = new ClientLog();
+        $groupModel = new Group();
+
+        $groupId = $_GET['group_id'] ?? null;
+        if ($groupId) {
+            $group = $groupModel->getById($groupId);
+            $clients = $clientLog->getConnectionsByGroup($groupId);
+        } else {
+            $group = ['name' => 'All Parties'];
+            $clients = $clientLog->getAllClients();
+        }
+        
+        $data = ['basePath' => $basePath];
+        extract($data);
+        require_once 'views/superadmin/clients.php';
+    }
+
+    public function clearClients() {
+        $groupId = $_POST['group_id'] ?? null;
+        if (!$groupId) {
+            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+            exit;
+        }
+
+        require_once 'app/Models/ClientLog.php';
+        $clientLog = new ClientLog();
+        $clientLog->clearConnectionsByGroup($groupId);
+
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+        exit;
+    }
+
+    public function deleteClient() {
+        $clientId = $_POST['client_id'] ?? null;
+        $groupId = $_POST['group_id'] ?? null;
+        
+        if ($clientId && $groupId) {
+            require_once 'app/Models/ClientLog.php';
+            $clientLog = new ClientLog();
+            $clientLog->deleteClient($clientId, $groupId);
+        }
+        
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+        exit;
+    }
+
+    public function banClient() {
+        $clientId = $_POST['client_id'] ?? null;
+        
+        if ($clientId) {
+            require_once 'app/Models/ClientLog.php';
+            $clientLog = new ClientLog();
+            $clientLog->banClient($clientId);
+        }
+        
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+        exit;
+    }
+
+    public function unbanClient() {
+        $clientId = $_POST['client_id'] ?? null;
+        
+        if ($clientId) {
+            require_once 'app/Models/ClientLog.php';
+            $clientLog = new ClientLog();
+            $clientLog->unbanClient($clientId);
+        }
+        
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+        exit;
     }
 
     public function createGroup() {

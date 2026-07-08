@@ -369,6 +369,16 @@ class ApiController {
             require_once 'app/Models/Group.php';
             $groupModel = new Group();
             $group = $groupModel->getById($row['group_id']);
+
+            // Log connection for screen if not already logged in this session
+            // Using session to avoid duplicate logs during polling
+            if (!isset($_SESSION['screen_logged_' . $row['group_id']])) {
+                require_once 'app/Models/ClientLog.php';
+                $clientLog = new ClientLog();
+                $clientLog->logConnection($row['group_id'], 'screen', 'screen');
+                $_SESSION['screen_logged_' . $row['group_id']] = true;
+            }
+
             echo json_encode([
                 'paired'     => true,
                 'group_id'   => $row['group_id'],

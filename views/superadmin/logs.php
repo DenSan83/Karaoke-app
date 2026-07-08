@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SuperAdmin - Activity Logs</title>
-    <link rel="stylesheet" href="<?= htmlspecialchars($basePath ?? '') ?>/public/css/admin.css">
-    <link rel="stylesheet" href="<?= htmlspecialchars($basePath ?? '') ?>/public/css/superadmin.css">
-    <link rel="stylesheet" href="<?= htmlspecialchars($basePath ?? '') ?>/public/css/admin_logs.css">
+    <base href="<?= htmlspecialchars($basePath ?? '') ?>/">
+    <link rel="stylesheet" href="public/css/admin.css">
+    <link rel="stylesheet" href="public/css/superadmin.css">
+    <link rel="stylesheet" href="public/css/admin_logs.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>Activity Logs (Last 1000)</h1>
-            <a href="<?= ($basePath ?? '') ?>/superadmin" class="btn btn-secondary">&larr; Back to Dashboard</a>
+            <a href="superadmin" class="btn btn-secondary">&larr; Back to Dashboard</a>
         </div>
 
         <div style="overflow-x: auto;">
@@ -40,6 +41,7 @@
                                         $badgeClass = 'badge-system';
                                         if (strpos($log['type'], 'login') !== false) $badgeClass = 'badge-login';
                                         if (strpos($log['type'], 'track') !== false || strpos($log['type'], 'song') !== false) $badgeClass = 'badge-track';
+                                        if ($log['type'] === 'BANNED_TRY') $badgeClass = 'badge-danger';
                                     ?>
                                     <span class="type-badge <?= $badgeClass ?>"><?= htmlspecialchars($log['type']) ?></span>
                                 </td>

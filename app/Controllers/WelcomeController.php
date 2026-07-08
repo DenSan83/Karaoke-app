@@ -36,6 +36,13 @@ class WelcomeController {
             exit;
         }
 
+        $guest = $this->guestModel->getById($_SESSION['guest_id']);
+        if (!$guest) {
+            unset($_SESSION['guest_id']);
+            header('Location: ' . ($this->basePath ?: '/'));
+            exit;
+        }
+
         require_once 'app/Models/Settings.php';
         $settings = new Settings();
         if (!$settings->get('allow_new_sessions', true)) {
@@ -47,13 +54,6 @@ class WelcomeController {
             exit;
         }
 
-        $guest = $this->guestModel->getById($_SESSION['guest_id']);
-        if (!$guest) {
-            unset($_SESSION['guest_id']);
-            header('Location: ' . ($this->basePath ?: '/'));
-            exit;
-        }
-
         // Get party name
         require_once 'app/Models/Group.php';
         $groupModel = new Group();
@@ -62,6 +62,15 @@ class WelcomeController {
             $group = $groupModel->getById($_SESSION['group_id']);
             if ($group) {
                 $partyName = $group['name'];
+            }
+
+            // Log connection for guest if not already logged in this session
+            if (!isset($_SESSION['guest_logged_' . $_SESSION['group_id']])) {
+                require_once 'app/Models/ClientLog.php';
+                $clientLog = new ClientLog();
+                $identity = $guest['name'] ?? 'guest';
+                $clientLog->logConnection($_SESSION['group_id'], 'guest', $identity);
+                $_SESSION['guest_logged_' . $_SESSION['group_id']] = true;
             }
         }
 
@@ -128,6 +137,15 @@ class WelcomeController {
         $data = json_decode(file_get_contents('php://input'), true);
         $code = strtoupper(trim($data['code'] ?? ''));
         $groupId = $data['group_id'] ?? null;
+
+        // Check if banned
+        require_once 'app/Models/ClientLog.php';
+        $clientLog = new ClientLog();
+        $clientId = $_COOKIE['karaoke_client_id'] ?? null;
+        if ($clientId && $clientLog->isBanned($clientId)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid code or party is no longer active.']);
+            return;
+        }
 
         require_once 'app/Models/Group.php';
         require_once 'app/Models/Settings.php';
@@ -298,6 +316,15 @@ class WelcomeController {
     public function addGuest() {
         header('Content-Type: application/json');
         
+        // Check if banned
+        require_once 'app/Models/ClientLog.php';
+        $clientLog = new ClientLog();
+        $clientId = $_COOKIE['karaoke_client_id'] ?? null;
+        if ($clientId && $clientLog->isBanned($clientId)) {
+            echo json_encode(['success' => false, 'error' => 'You are not allowed to join this party.']);
+            exit;
+        }
+
         require_once 'app/Models/Settings.php';
         $settings = new Settings();
         if (!$settings->get('allow_new_sessions', true)) {
@@ -307,11 +334,17 @@ class WelcomeController {
 
         $data = json_decode(file_get_contents('php://input'), true);
         $name = $data['name'] ?? '';
+        $fingerprint = $data['fingerprint'] ?? null;
+
+        if ($fingerprint) {
+            $_SESSION['guest_fingerprint'] = $fingerprint;
+        }
 
         $result = $this->guestModel->add($name);
         if (isset($result['success']) && $result['success']) {
             $_SESSION['guest_id'] = $result['guest']['id'];
             $_SESSION['guest_name'] = $result['guest']['name'];
+            $_SESSION['guest_id_group'] = $this->groupId;
             
             // Set persistent identity cookie for 4 hours
             setcookie('karaoke_guest_id', $result['guest']['id'], time() + 14400, '/', '', false, true);

@@ -78,6 +78,7 @@
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/contact">Edit Contact</a>
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/access_keys">Access keys bank</a>
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/logs">See logs</a>
+                    <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/clients">See clients</a>
                 </div>
             </div>
             
@@ -108,6 +109,7 @@
                         <div id="dropdown-<?= $group['id'] ?>" class="kebab-dropdown">
                             <a href="<?= htmlspecialchars($basePath ?? '') ?>/admin?group_id=<?= $group['id'] ?>">Manage</a>
                             <button onclick='showEditModal(<?= json_encode($group) ?>)'>Edit</button>
+                            <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/clients?group_id=<?= $group['id'] ?>">Clients</a>
                             <button class="delete-option" onclick="deleteGroup('<?= $group['id'] ?>')">Delete</button>
                         </div>
                     </div>

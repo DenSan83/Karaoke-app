@@ -40,7 +40,16 @@
                            style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()">
                 </div>
                 <button id="verify-btn" class="welcome-btn">Enter Party</button>
-                <div id="error-1" class="error-message"></div>
+                <?php 
+                $showBannedError = false;
+                if (isset($_SESSION['banned_error'])) {
+                    $showBannedError = true;
+                    unset($_SESSION['banned_error']);
+                }
+                ?>
+                <div id="error-1" class="error-message" <?php echo $showBannedError ? 'style="display: block;"' : ''; ?>>
+                    <?php echo $showBannedError ? 'Invalid code or party is no longer active.' : ''; ?>
+                </div>
             </div>
 
             <!-- Step 2: Name Entry -->
