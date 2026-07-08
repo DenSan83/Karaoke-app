@@ -179,7 +179,14 @@ class SuperAdminController {
     }
 
     public function createGroup() {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+        
+        if ($data === null) {
+            echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+            return;
+        }
+
         $name = $data['name'] ?? '';
         $adminUsername = $data['admin_username'] ?? '';
         $durationType = $data['duration_type'] ?? 'unlimited';
@@ -195,58 +202,48 @@ class SuperAdminController {
 
         try {
             $newGroup = $this->groupModel->create($name, $adminUsername, $durationType, $validFrom, $validTo, $allowFallback, '', '', $accessCode);
-        } catch (Throwable $e) {
-            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
-            return;
-        }
-        if ($newGroup) {
-            $id = $newGroup['id'];
-
-            // Log group creation
-            require_once 'app/Models/SystemLog.php';
-            $sysLog = new SystemLog($id);
-            $sysLog->log('group_created', [
-                'name' => $name,
-                'admin_username' => $adminUsername,
-                'access_code' => $accessCode
-            ]);
-
-            // Sync access_code to Settings if provided
-            if ($accessCode) {
-                require_once 'app/Models/Settings.php';
-                $settings = new Settings($id);
-                $settings->update(function($current) use ($accessCode) {
-                    $current['guest_codes'] = [$accessCode];
-                    unset($current['guest_code']);
-                    return $current;
-                });
-            }
-
-            // Initialize files for the new group
-            try {
-                require_once 'app/Models/Settings.php';
-                require_once 'app/Models/PlayerStatus.php';
-                require_once 'app/Models/Playlist.php';
-                require_once 'app/Models/Guest.php';
-                require_once 'app/Models/SystemLog.php';
-
-                new Settings($id);
-                new PlayerStatus($id);
-                new Playlist($id);
-                new Guest($id);
-                new SystemLog($id);
-            } catch (Throwable $e) {
-                // Silently continue or log? The group is created in groups.json anyway.
-            }
             
-            echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to create group']);
+            if ($newGroup) {
+                $id = $newGroup['id'];
+
+                // Log group creation
+                require_once 'app/Models/SystemLog.php';
+                $sysLog = new SystemLog($id);
+                $sysLog->log('group_created', [
+                    'name' => $name,
+                    'admin_username' => $adminUsername,
+                    'access_code' => $accessCode
+                ]);
+
+                // Sync access_code to Settings if provided
+                if ($accessCode) {
+                    require_once 'app/Models/Settings.php';
+                    $settings = new Settings($id);
+                    $settings->update(function($current) use ($accessCode) {
+                        $current['guest_codes'] = [$accessCode];
+                        unset($current['guest_code']);
+                        return $current;
+                    });
+                }
+                
+                echo json_encode(['success' => true]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to create group']);
+            }
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 
     public function deleteGroup() {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+        
+        if ($data === null) {
+            echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+            return;
+        }
+
         $id = $data['id'] ?? '';
         
         if (empty($id)) {
@@ -254,12 +251,23 @@ class SuperAdminController {
             return;
         }
 
-        $success = $this->groupModel->delete($id);
-        echo json_encode(['success' => $success]);
+        try {
+            $success = $this->groupModel->delete($id);
+            echo json_encode(['success' => $success]);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
     }
 
     public function updateGroup() {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+
+        if ($data === null) {
+            echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+            return;
+        }
+
         $id = $data['id'] ?? '';
         $newId = $data['new_id'] ?? $id;
         
@@ -268,73 +276,83 @@ class SuperAdminController {
             return;
         }
 
-        // Handle ID change if necessary
-        if ($newId !== $id) {
-            // Validate new ID is unique
-            $existing = $this->groupModel->getById($newId);
-            if ($existing) {
-                echo json_encode(['success' => false, 'message' => 'New Party ID already exists']);
-                return;
+        try {
+            // Handle ID change if necessary
+            if ($newId !== $id) {
+                // Validate new ID is unique
+                $existing = $this->groupModel->getById($newId);
+                if ($existing) {
+                    echo json_encode(['success' => false, 'message' => 'New Party ID already exists']);
+                    return;
+                }
+
+                // ID will be updated in the database by $this->groupModel->update($id, $data)
+                // since $data['id'] is now set to $newId below
+                $data['id'] = $newId;
+
+                // Update associated database tables
+                $tablesToUpdate = ['activity_logs', 'guests', 'player_status', 'playlist', 'settings'];
+                foreach ($tablesToUpdate as $table) {
+                    $this->groupModel->updateRelatedTable($table, $id, $newId);
+                }
+            }
+            unset($data['new_id']);
+
+            if (isset($data['valid_from']) && $data['valid_from'] === '') $data['valid_from'] = null;
+            if (isset($data['valid_to']) && $data['valid_to'] === '') $data['valid_to'] = null;
+            if (isset($data['access_code'])) {
+                if ($data['access_code'] === '') {
+                    $data['access_code'] = null;
+                } else {
+                    $data['access_code'] = strtoupper($data['access_code']);
+                }
             }
 
-            // ID will be updated in the database by $this->groupModel->update($id, $data)
-            // since $data['id'] is now set to $newId below
-            $data['id'] = $newId;
+            // Filter data to only include valid columns for the groups table
+            $validColumns = [
+                'id', 'name', 'admin_username', 'admin_pin', 'access_code', 
+                'duration_type', 'valid_from', 'valid_to', 'allow_fallback', 
+                'must_have_words', 'must_not_have_words'
+            ];
+            $filteredData = array_intersect_key($data, array_flip($validColumns));
 
-            // Update associated database tables
-            $tablesToUpdate = ['activity_logs', 'guests', 'player_status', 'playlist', 'settings'];
-            foreach ($tablesToUpdate as $table) {
-                $this->groupModel->updateRelatedTable($table, $id, $newId);
-            }
-        }
-        unset($data['new_id']);
-
-        if (isset($data['valid_from']) && $data['valid_from'] === '') $data['valid_from'] = null;
-        if (isset($data['valid_to']) && $data['valid_to'] === '') $data['valid_to'] = null;
-        if (isset($data['access_code'])) {
-            if ($data['access_code'] === '') {
-                $data['access_code'] = null;
-            } else {
-                $data['access_code'] = strtoupper($data['access_code']);
-            }
-        }
-
-        $success = $this->groupModel->update($id, $data);
-        
-        // Log access code change if applicable
-        if ($success && isset($data['access_code'])) {
-            require_once 'app/Models/SystemLog.php';
-            $sysLog = new SystemLog($data['id']); // Use updated ID if it changed
-            $sysLog->log('access_code_changed', [
-                'new_code' => $data['access_code'],
-                'changed_by' => 'superadmin'
-            ]);
-        }
-
-        // Sync access_code to Settings if updated
-        if ($success && isset($data['access_code'])) {
-            require_once 'app/Models/Settings.php';
-            $settings = new Settings($data['id']); // Use updated ID if it changed
-            $newCode = $data['access_code'];
+            $success = $this->groupModel->update($id, $filteredData);
             
-            if ($newCode) {
-                // If there are existing codes, we might want to update the first one or replace all
-                // To keep it simple and consistent with AdminController, we'll replace/set guest_codes
-                $settings->update(function($current) use ($newCode) {
-                    $current['guest_codes'] = [$newCode];
-                    unset($current['guest_code']);
-                    return $current;
-                });
-            } else {
-                $settings->update(function($current) {
-                    $current['guest_codes'] = [];
-                    unset($current['guest_code']);
-                    return $current;
-                });
+            // Log access code change if applicable
+            if ($success && isset($data['access_code'])) {
+                require_once 'app/Models/SystemLog.php';
+                $sysLog = new SystemLog($data['id']); // Use updated ID if it changed
+                $sysLog->log('access_code_changed', [
+                    'new_code' => $data['access_code'],
+                    'changed_by' => 'superadmin'
+                ]);
             }
-        }
 
-        echo json_encode(['success' => $success]);
+            // Sync access_code to Settings if updated
+            if ($success && isset($data['access_code'])) {
+                require_once 'app/Models/Settings.php';
+                $settings = new Settings($data['id']); // Use updated ID if it changed
+                $newCode = $data['access_code'];
+                
+                if ($newCode) {
+                    $settings->update(function($current) use ($newCode) {
+                        $current['guest_codes'] = [$newCode];
+                        unset($current['guest_code']);
+                        return $current;
+                    });
+                } else {
+                    $settings->update(function($current) {
+                        $current['guest_codes'] = [];
+                        unset($current['guest_code']);
+                        return $current;
+                    });
+                }
+            }
+
+            echo json_encode(['success' => $success]);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
     }
 
     public function getBellCount() {
