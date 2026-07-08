@@ -46,9 +46,14 @@ class AuthController {
                 $username = $parts[0];
                 $hash = $parts[1];
 
-                if ($username === $usernameInput && password_verify($passwordInput, $hash)) {
+            if ($username === $usernameInput && password_verify($passwordInput, $hash)) {
                     $authenticated = true;
                     $isSuperAdmin = true;
+                    
+                    // Check and fix database schema on superadmin login
+                    require_once 'app/Services/SystemCheck.php';
+                    SystemCheck::fixSchema();
+                    
                     break;
                 }
             }

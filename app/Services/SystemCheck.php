@@ -42,7 +42,7 @@ class SystemCheck {
     }
 
     /**
-     * Check if database is initialized and has all required tables
+     * Check if database is initialized and has all required tables and columns
      */
     public static function checkDatabase() {
         try {
@@ -50,17 +50,84 @@ class SystemCheck {
             $db = Database::getInstance();
             $pdo = $db->getConnection();
             
-            $requiredTables = ['groups', 'client_connections'];
-            foreach ($requiredTables as $table) {
+            $tables = [
+                'groups' => ['id', 'name', 'admin_username', 'admin_pin', 'access_code', 'duration_type', 'valid_from', 'valid_to', 'created_at', 'allow_fallback', 'must_have_words', 'must_not_have_words'],
+                'settings' => ['group_id', 'setting_key', 'setting_value', 'updated_at'],
+                'guests' => ['id', 'group_id', 'name', 'songs', 'notifications', 'added_at'],
+                'playlist' => ['id', 'group_id', 'video_id', 'title', 'user', 'added_at', 'downloading', 'local_path', 'sort_order'],
+                'activity_logs' => ['id', 'group_id', 'type', 'timestamp', 'data'],
+                'player_status' => ['group_id', 'command', 'payload', 'command_timestamp', 'current_index', 'state', 'state_timestamp', 'last_updated'],
+                'screens' => ['secret_id', 'public_code', 'group_id', 'created_at', 'paired_at'],
+                'client_connections' => ['id', 'group_id', 'client_id', 'type', 'identity', 'data', 'created_at', 'last_activity', 'is_online', 'is_banned', 'banned_at']
+            ];
+
+            foreach ($tables as $table => $columns) {
                 $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
                 if ($stmt->rowCount() === 0) {
                     return false;
+                }
+                
+                // Also check columns
+                $existingColumns = [];
+                $stmt = $pdo->query("SHOW COLUMNS FROM `$table` ");
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $existingColumns[] = $row['Field'];
+                }
+                
+                foreach ($columns as $column) {
+                    if (!in_array($column, $existingColumns)) {
+                        return false;
+                    }
                 }
             }
             return true;
         } catch (PDOException $e) {
             return false;
         } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Fix database schema by adding missing columns or tables
+     */
+    public static function fixSchema() {
+        try {
+            require_once __DIR__ . '/Database.php';
+            $db = Database::getInstance();
+            $pdo = $db->getConnection();
+            
+            // Re-run migration script which has CREATE TABLE IF NOT EXISTS
+            // but we also need to add missing columns.
+            $GLOBALS['RUN_MIGRATION'] = true;
+            require_once __DIR__ . '/../../migrate_json_to_mysql.php';
+            if (function_exists('runMigration')) {
+                runMigration();
+            }
+
+            // Explicitly check and add missing columns for 'groups' table as requested
+            $groupColumns = [
+                'access_code' => "ALTER TABLE `groups` ADD COLUMN access_code VARCHAR(255) NULL AFTER admin_pin",
+                'allow_fallback' => "ALTER TABLE `groups` ADD COLUMN allow_fallback TINYINT(1) NOT NULL DEFAULT 0",
+                'must_have_words' => "ALTER TABLE `groups` ADD COLUMN must_have_words TEXT NULL",
+                'must_not_have_words' => "ALTER TABLE `groups` ADD COLUMN must_not_have_words TEXT NULL"
+            ];
+
+            $stmt = $pdo->query("SHOW COLUMNS FROM `groups` ");
+            $existingColumns = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $existingColumns[] = $row['Field'];
+            }
+
+            foreach ($groupColumns as $col => $sql) {
+                if (!in_array($col, $existingColumns)) {
+                    $pdo->exec($sql);
+                }
+            }
+
+            return true;
+        } catch (Exception $e) {
+            error_log("Failed to fix schema: " . $e->getMessage());
             return false;
         }
     }

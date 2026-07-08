@@ -33,11 +33,13 @@ class Group {
         try {
             $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $access_code, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0, $must_have_words, $must_not_have_words]);
         } catch (PDOException $e) {
-            if ($e->getCode() == '42S22' && strpos($e->getMessage(), 'access_code') !== false) {
-                try {
-                    $this->db->query("ALTER TABLE `groups` ADD COLUMN access_code VARCHAR(255) NULL AFTER admin_pin");
+            if ($e->getCode() == '42S22') { // Column not found
+                error_log("Group::create - Column not found: " . $e->getMessage());
+                
+                require_once 'app/Services/SystemCheck.php';
+                if (SystemCheck::fixSchema()) {
                     $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $access_code, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0, $must_have_words, $must_not_have_words]);
-                } catch (Exception $e2) {
+                } else {
                     throw $e;
                 }
             } else {
@@ -80,14 +82,10 @@ class Group {
         } catch (PDOException $e) {
             if ($e->getCode() == '42S22') { // Column not found
                 error_log("Group::update - Column not found: " . $e->getMessage());
-                // If it's access_code, maybe it's missing in some environments
-                if (strpos($e->getMessage(), 'access_code') !== false) {
-                    try {
-                        $this->db->query("ALTER TABLE `groups` ADD COLUMN access_code VARCHAR(255) NULL AFTER admin_pin");
-                        return $this->db->query($sql, $params);
-                    } catch (Exception $e2) {
-                        throw $e; // Throw original if alter fails
-                    }
+                
+                require_once 'app/Services/SystemCheck.php';
+                if (SystemCheck::fixSchema()) {
+                    return $this->db->query($sql, $params);
                 }
             }
             throw $e;

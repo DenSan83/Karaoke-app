@@ -41,6 +41,7 @@ function runMigration() {
             name VARCHAR(255) NOT NULL,
             admin_username VARCHAR(255) NOT NULL,
             admin_pin VARCHAR(10) NOT NULL,
+            access_code VARCHAR(255) NULL,
             duration_type ENUM('unlimited', 'limited') NOT NULL,
             valid_from DATETIME NULL,
             valid_to DATETIME NULL,
