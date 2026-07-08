@@ -31,7 +31,7 @@
                         <tr>
                             <th>Last Activity</th>
                             <th>Type</th>
-                            <th>Identity & Status</th>
+                            <th>Identity</th>
                             <th>Technical Data</th>
                             <th>Actions</th>
                         </tr>
