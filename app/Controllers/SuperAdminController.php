@@ -254,20 +254,6 @@ class SuperAdminController {
             return;
         }
 
-        // Delete group files
-        $filesToDelete = [
-            "activity_logs_{$id}.json",
-            "guests_{$id}.json",
-            "playlist_{$id}.json",
-            "settings_{$id}.json",
-            "status_{$id}.json"
-        ];
-        foreach ($filesToDelete as $file) {
-            if (file_exists($file)) {
-                unlink($file);
-            }
-        }
-
         $success = $this->groupModel->delete($id);
         echo json_encode(['success' => $success]);
     }
@@ -291,18 +277,6 @@ class SuperAdminController {
                 return;
             }
 
-            $filesToRename = [
-                "activity_logs_{$id}.json" => "activity_logs_{$newId}.json",
-                "guests_{$id}.json" => "guests_{$newId}.json",
-                "playlist_{$id}.json" => "playlist_{$newId}.json",
-                "settings_{$id}.json" => "settings_{$newId}.json",
-                "status_{$id}.json" => "status_{$newId}.json"
-            ];
-            foreach ($filesToRename as $oldName => $newName) {
-                if (file_exists($oldName)) {
-                    rename($oldName, $newName);
-                }
-            }
             // ID will be updated in the database by $this->groupModel->update($id, $data)
             // since $data['id'] is now set to $newId below
             $data['id'] = $newId;
@@ -330,7 +304,7 @@ class SuperAdminController {
         // Log access code change if applicable
         if ($success && isset($data['access_code'])) {
             require_once 'app/Models/SystemLog.php';
-            $sysLog = new SystemLog($id);
+            $sysLog = new SystemLog($data['id']); // Use updated ID if it changed
             $sysLog->log('access_code_changed', [
                 'new_code' => $data['access_code'],
                 'changed_by' => 'superadmin'
@@ -340,7 +314,7 @@ class SuperAdminController {
         // Sync access_code to Settings if updated
         if ($success && isset($data['access_code'])) {
             require_once 'app/Models/Settings.php';
-            $settings = new Settings($id);
+            $settings = new Settings($data['id']); // Use updated ID if it changed
             $newCode = $data['access_code'];
             
             if ($newCode) {

@@ -46,6 +46,7 @@ class Settings {
     public function update($callback) {
         $current = $this->getAll();
         $newData = $callback($current);
+        if (!is_array($newData)) return false;
         foreach ($newData as $key => $value) {
             $this->set($key, $value);
         }
