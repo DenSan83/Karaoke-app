@@ -29,7 +29,21 @@ class Group {
         $sql = "INSERT INTO `groups` (id, name, admin_username, admin_pin, access_code, duration_type, valid_from, valid_to, created_at, allow_fallback, must_have_words, must_not_have_words)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $createdAt = time();
-        $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $access_code, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0, $must_have_words, $must_not_have_words]);
+        
+        try {
+            $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $access_code, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0, $must_have_words, $must_not_have_words]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S22' && strpos($e->getMessage(), 'access_code') !== false) {
+                try {
+                    $this->db->query("ALTER TABLE `groups` ADD COLUMN access_code VARCHAR(255) NULL AFTER admin_pin");
+                    $success = $this->db->query($sql, [$id, $name, $admin_username, $pin, $access_code, $duration_type, $valid_from, $valid_to, $createdAt, $allow_fallback ? 1 : 0, $must_have_words, $must_not_have_words]);
+                } catch (Exception $e2) {
+                    throw $e;
+                }
+            } else {
+                throw $e;
+            }
+        }
 
         if ($success) {
             return [
@@ -61,7 +75,23 @@ class Group {
         
         $params[] = $id;
         $sql = "UPDATE `groups` SET " . implode(', ', $fields) . " WHERE id = ?";
-        return $this->db->query($sql, $params);
+        try {
+            return $this->db->query($sql, $params);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '42S22') { // Column not found
+                error_log("Group::update - Column not found: " . $e->getMessage());
+                // If it's access_code, maybe it's missing in some environments
+                if (strpos($e->getMessage(), 'access_code') !== false) {
+                    try {
+                        $this->db->query("ALTER TABLE `groups` ADD COLUMN access_code VARCHAR(255) NULL AFTER admin_pin");
+                        return $this->db->query($sql, $params);
+                    } catch (Exception $e2) {
+                        throw $e; // Throw original if alter fails
+                    }
+                }
+            }
+            throw $e;
+        }
     }
 
     public function delete($id) {
