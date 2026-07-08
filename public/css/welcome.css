@@ -55,6 +55,16 @@
     background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.welcome-logo img {
+    height: 3.7rem;
+    width: auto;
+    -webkit-text-fill-color: initial;
 }
 
 .welcome-subtitle {

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaoke Admin</title>
     <base href="<?= htmlspecialchars($basePath) ?>/">
+    <link rel="icon" type="image/png" href="public/media/karaoke_logo.png">
     <link rel="stylesheet" href="public/css/admin.css">
 </head>
 <body>

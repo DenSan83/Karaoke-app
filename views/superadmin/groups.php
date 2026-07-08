@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SuperAdmin - Party Management</title>
+    <link rel="icon" type="image/png" href="<?= htmlspecialchars($basePath ?? '') ?>/public/media/karaoke_logo.png">
     <link rel="stylesheet" href="<?= htmlspecialchars($basePath ?? '') ?>/public/css/admin.css">
     <link rel="stylesheet" href="<?= htmlspecialchars($basePath ?? '') ?>/public/css/superadmin.css">
     <style>

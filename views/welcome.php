@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome - Party Time</title>
     <base href="<?= htmlspecialchars($basePath) ?>/">
+    <link rel="icon" type="image/png" href="public/media/karaoke_logo.png">
     <link rel="stylesheet" href="public/css/admin.css">
     <link rel="stylesheet" href="public/css/welcome.css">
 </head>
 <body>
     <div class="welcome-page">
         <div class="welcome-card">
-            <div class="welcome-logo">Party Time</div>
+            <div class="welcome-logo"><img src="public/media/karaoke_logo.png" alt="Karaoke Logo"> Party Time</div>
             <p class="welcome-subtitle">Join the queue and sing your heart out!</p>
 
             <!-- Step 1: Choice/Code -->
