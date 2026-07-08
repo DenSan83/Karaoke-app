@@ -39,22 +39,31 @@ if ($route !== 'installing' && strpos($route, 'api/install') !== 0) {
     if (!SystemCheck::checkDatabase()) {
         if (isset($_GET['migration_attempted'])) {
             header('Content-Type: text/plain; charset=utf-8');
-            die("La migration a été tentée mais la base de données n'est toujours pas prête. Veuillez vérifier votre configuration .env et vos logs d'erreur.");
+            // Try to include more info
+            $error = error_get_last();
+            $error_msg = $error ? "\nLast error: " . $error['message'] : "";
+            die("La migration a été tentée mais la base de données n'est toujours pas prête. Veuillez vérifier votre configuration .env et vos logs d'erreur." . $error_msg);
         }
         try {
-            $GLOBALS['RUN_MIGRATION'] = true;
-            require_once 'migrate_json_to_mysql.php';
+            // Log attempt
+            error_log("Database check failed, attempting auto-fix/migration...");
             
-            // Re-check after migration
+            require_once 'app/Services/SystemCheck.php';
+            SystemCheck::fixSchema();
+            
+            // Re-check after fix
             if (SystemCheck::checkDatabase()) {
+                error_log("Database fix successful.");
                 $separator = (strpos($_SERVER['REQUEST_URI'], '?') === false) ? '?' : '&';
                 header('Location: ' . $_SERVER['REQUEST_URI'] . $separator . 'migration_attempted=1');
                 exit;
             } else {
+                error_log("Database fix failed.");
                 header('Content-Type: text/plain; charset=utf-8');
-                die("Migration failed or database still not ready.");
+                die("Migration failed or database still not ready. Please check error logs.");
             }
         } catch (Exception $e) {
+            error_log("Migration exception: " . $e->getMessage());
             header('Content-Type: text/plain; charset=utf-8');
             die("Migration error: " . $e->getMessage());
         }

@@ -50,7 +50,7 @@ class SystemCheck {
             $db = Database::getInstance();
             $pdo = $db->getConnection();
             
-            $tables = [
+        $tables = [
                 'groups' => ['id', 'name', 'admin_username', 'admin_pin', 'access_code', 'duration_type', 'valid_from', 'valid_to', 'created_at', 'allow_fallback', 'must_have_words', 'must_not_have_words'],
                 'settings' => ['group_id', 'setting_key', 'setting_value', 'updated_at'],
                 'guests' => ['id', 'group_id', 'name', 'songs', 'notifications', 'added_at'],
@@ -62,22 +62,27 @@ class SystemCheck {
             ];
 
             foreach ($tables as $table => $columns) {
-                $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
-                if ($stmt->rowCount() === 0) {
-                    return false;
-                }
-                
-                // Also check columns
-                $existingColumns = [];
-                $stmt = $pdo->query("SHOW COLUMNS FROM `$table` ");
-                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $existingColumns[] = $row['Field'];
-                }
-                
-                foreach ($columns as $column) {
-                    if (!in_array($column, $existingColumns)) {
+                try {
+                    $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
+                    if ($stmt->rowCount() === 0) {
                         return false;
                     }
+                    
+                    // Also check columns
+                    $existingColumns = [];
+                    $stmt = $pdo->query("SHOW COLUMNS FROM `$table` ");
+                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                        $existingColumns[] = $row['Field'];
+                    }
+                    
+                    foreach ($columns as $column) {
+                        if (!in_array($column, $existingColumns)) {
+                            return false;
+                        }
+                    }
+                } catch (PDOException $e) {
+                    error_log("Database check failed for table $table: " . $e->getMessage());
+                    return false;
                 }
             }
             return true;
@@ -99,10 +104,12 @@ class SystemCheck {
             
             // Re-run migration script which has CREATE TABLE IF NOT EXISTS
             // but we also need to add missing columns.
-            $GLOBALS['RUN_MIGRATION'] = true;
-            require_once __DIR__ . '/../../migrate_json_to_mysql.php';
-            if (function_exists('runMigration')) {
-                runMigration();
+            if (!isset($GLOBALS['RUN_MIGRATION'])) {
+                $GLOBALS['RUN_MIGRATION'] = true;
+                require_once __DIR__ . '/../../migrate_json_to_mysql.php';
+                if (function_exists('runMigration')) {
+                    runMigration();
+                }
             }
 
             // Explicitly check and add missing columns for 'groups' table as requested
@@ -113,16 +120,20 @@ class SystemCheck {
                 'must_not_have_words' => "ALTER TABLE `groups` ADD COLUMN must_not_have_words TEXT NULL"
             ];
 
-            $stmt = $pdo->query("SHOW COLUMNS FROM `groups` ");
-            $existingColumns = [];
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $existingColumns[] = $row['Field'];
-            }
-
-            foreach ($groupColumns as $col => $sql) {
-                if (!in_array($col, $existingColumns)) {
-                    $pdo->exec($sql);
+            try {
+                $stmt = $pdo->query("SHOW COLUMNS FROM `groups` ");
+                $existingColumns = [];
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $existingColumns[] = $row['Field'];
                 }
+
+                foreach ($groupColumns as $col => $sql) {
+                    if (!in_array($col, $existingColumns)) {
+                        $pdo->exec($sql);
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Failed to update groups schema: " . $e->getMessage());
             }
 
             return true;
