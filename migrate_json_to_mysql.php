@@ -125,6 +125,13 @@ function runMigration() {
             INDEX (group_id),
             INDEX (client_id),
             UNIQUE KEY (group_id, client_id, type, identity)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+        'visit_logs' => "CREATE TABLE IF NOT EXISTS `visit_logs` (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            page VARCHAR(255) NOT NULL,
+            data LONGTEXT
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
     ];
 

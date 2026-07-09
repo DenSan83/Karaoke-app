@@ -207,8 +207,60 @@
         // Support back/forward navigation through the hash
         window.addEventListener('hashchange', function () {
             const h = window.location.hash.slice(1);
-            if (h === 'admin' || h === 'guest') openTab(h);
+            if (h === 'admin' || h === 'guest') {
+                openTab(h);
+                logVisit(h);
+            }
         });
+
+        async function logVisit(tab) {
+            const page = window.location.pathname + '#' + tab;
+            const technicalData = {
+                browser: getBrowser(),
+                device: getDevice(),
+                language: navigator.language,
+                fingerprint: {
+                    ua: navigator.userAgent,
+                    screen: `${window.screen.width}x${window.screen.height}`,
+                    tz: Intl.DateTimeFormat().resolvedOptions().timeZone
+                }
+            };
+
+            try {
+                await fetch('<?= htmlspecialchars($basePath) ?>/api/log-visit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page, technicalData })
+                });
+            } catch (e) {
+                console.error('Failed to log visit', e);
+            }
+        }
+
+        function getBrowser() {
+            const ua = navigator.userAgent;
+            if (ua.includes('MSIE') || ua.includes('Trident')) return 'Internet Explorer';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Safari')) return 'Safari';
+            if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera';
+            return 'Unknown';
+        }
+
+        function getDevice() {
+            const ua = navigator.userAgent;
+            if (/mobile/i.test(ua)) return 'Mobile';
+            if (/tablet/i.test(ua)) return 'Tablet';
+            return 'Desktop';
+        }
+
+        // Initial log
+        if (hash === 'admin' || hash === 'guest') {
+            logVisit(hash);
+        } else {
+            // Default tab is admin
+            logVisit('admin');
+        }
     </script>
 </body>
 </html>

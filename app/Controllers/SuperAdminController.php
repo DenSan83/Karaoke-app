@@ -90,15 +90,30 @@ class SuperAdminController {
     public function logs() {
         global $basePath;
         require_once 'app/Models/SystemLog.php';
+        require_once 'app/Models/VisitLog.php';
         $db = Database::getInstance();
         
         // We want to see ALL logs from activity_logs table across all groups
         $sql = "SELECT * FROM `activity_logs` ORDER BY timestamp DESC LIMIT 1000";
         $logs = $db->fetchAll($sql);
+
+        $visitLog = new VisitLog();
+        $visits = $visitLog->getVisits(1000);
         
-        $data = ['basePath' => $basePath];
+        $data = ['basePath' => $basePath, 'logs' => $logs, 'visits' => $visits];
         extract($data);
         require_once 'views/superadmin/logs.php';
+    }
+
+    public function deleteVisitLog() {
+        $visitId = $_POST['visit_id'] ?? null;
+        if ($visitId) {
+            require_once 'app/Models/VisitLog.php';
+            $visitLog = new VisitLog();
+            $visitLog->deleteVisit($visitId);
+        }
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'superadmin/logs'));
+        exit;
     }
 
     public function clients() {

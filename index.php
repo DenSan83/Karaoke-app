@@ -280,6 +280,11 @@ switch ($route) {
         $controller->deleteClient();
         break;
 
+    case 'superadmin/delete_visit_log':
+        $controller = new SuperAdminController();
+        $controller->deleteVisitLog();
+        break;
+
     case 'superadmin/ban_client':
         $controller = new SuperAdminController();
         $controller->banClient();
@@ -303,6 +308,11 @@ switch ($route) {
     case 'api/superadmin/update_group':
         $controller = new SuperAdminController();
         $controller->updateGroup();
+        break;
+
+    case 'api/log-visit':
+        $controller = new ApiController();
+        $controller->logVisit();
         break;
 
     case 'api/superadmin/bell/count':

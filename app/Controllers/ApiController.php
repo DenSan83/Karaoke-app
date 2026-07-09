@@ -457,4 +457,32 @@ class ApiController {
             echo json_encode(['error' => 'Failed to update word filter']);
         }
     }
+
+    public function logVisit() {
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        $page = $data['page'] ?? 'unknown';
+        $technicalData = $data['technicalData'] ?? [];
+        
+        // Add server-side IP if not provided or to be sure
+        if (!isset($technicalData['ip_address'])) {
+            require_once 'app/Models/ClientLog.php';
+            $clientLog = new ClientLog();
+            // ClientLog::getIpAddress is private, but we can replicate it or use REMOTE_ADDR
+            $technicalData['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            
+            // Try to get more accurate IP if behind proxy
+            if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $technicalData['ip_address'] = trim($ips[0]);
+            }
+        }
+
+        require_once 'app/Models/VisitLog.php';
+        $visitLog = new VisitLog();
+        $visitLog->logVisit($page, $technicalData);
+        
+        echo json_encode(['success' => true]);
+    }
 }
