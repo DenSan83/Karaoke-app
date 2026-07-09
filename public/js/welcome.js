@@ -135,7 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function logVisit(pageName) {
-        const basePath = typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '';
+        const basePath = typeof BASE_PATH !== 'undefined' ? BASE_PATH : '';
+        const apiUrl = (basePath.endsWith('/') ? basePath : basePath + '/') + 'api/log-visit';
+        
         const technicalData = {
             browser: getBrowser(),
             device: getDevice(),
@@ -148,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            await fetch(basePath + 'api/log-visit', {
+            await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ page: pageName, technicalData })

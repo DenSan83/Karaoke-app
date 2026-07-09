@@ -1,3 +1,13 @@
+<?php
+// Ensure $basePath is defined if this file is included directly or through a route that doesn't set it
+if (!isset($basePath)) {
+    $scriptName = $_SERVER['SCRIPT_NAME'];
+    $basePath = str_replace('\\', '/', dirname($scriptName));
+    if ($basePath === '/') {
+        $basePath = '';
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -195,6 +205,7 @@
                 const tab = this.dataset.tab;
                 history.replaceState(null, '', window.location.pathname + '#' + tab);
                 openTab(tab);
+                logVisit(tab);
             });
         });
 
@@ -215,6 +226,9 @@
 
         async function logVisit(tab) {
             const page = window.location.pathname + '#' + tab;
+            const basePath = '<?= htmlspecialchars($basePath) ?>';
+            const apiUrl = (basePath.endsWith('/') ? basePath : basePath + '/') + 'api/log-visit';
+            
             const technicalData = {
                 browser: getBrowser(),
                 device: getDevice(),
@@ -227,7 +241,7 @@
             };
 
             try {
-                await fetch('<?= htmlspecialchars($basePath) ?>/api/log-visit', {
+                await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ page, technicalData })
