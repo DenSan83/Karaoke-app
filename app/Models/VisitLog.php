@@ -16,7 +16,19 @@ class VisitLog {
      */
     public function logVisit($page, $data) {
         $sql = "INSERT INTO `visit_logs` (timestamp, page, data) VALUES (NOW(), ?, ?)";
-        return $this->db->query($sql, [$page, json_encode($data)]);
+        try {
+            return $this->db->query($sql, [$page, json_encode($data)]);
+        } catch (PDOException $e) {
+            if ($e->getCode() != '42S02') throw $e;
+            // Table missing — create it and retry once
+            $this->db->getConnection()->exec("CREATE TABLE IF NOT EXISTS `visit_logs` (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                page VARCHAR(255) NOT NULL,
+                data LONGTEXT
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            return $this->db->query($sql, [$page, json_encode($data)]);
+        }
     }
 
     /**
