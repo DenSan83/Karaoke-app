@@ -79,8 +79,9 @@
                 <img src="public/media/karaoke_logo.png" alt="Karaoke Logo">
                 <span>Party Time</span>
             </div>
-            <h1>How to Run Your Karaoke Party</h1>
-            <p class="howto-intro">Welcome! Your party has been created by the superadmin. Follow these steps to get the music started and gather your friends for a great karaoke night at home.</p>
+            <h1>How to Use Your Karaoke App</h1>
+            <p class="howto-intro">Welcome! Your party has already been created? Yay! </p>
+            <p class="howto-intro">Follow these steps to get the music started and gather your friends for a great karaoke night.</p>
 
             <div class="tabs">
                 <button class="tab-btn active" data-tab="admin">For the Admin</button>
