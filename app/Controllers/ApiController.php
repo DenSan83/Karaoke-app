@@ -459,28 +459,40 @@ class ApiController {
     }
 
     public function logVisit() {
-        header('Content-Type: application/json');
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        $page = $data['page'] ?? 'unknown';
-        $technicalData = $data['technicalData'] ?? [];
-        
-        // Add server-side IP if not provided or to be sure
-        if (!isset($technicalData['ip_address'])) {
-            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        try {
+            header('Content-Type: application/json');
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true);
             
-            // Try to get more accurate IP if behind proxy
-            if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-                $ip = trim($ips[0]);
+            if (!$data) {
+                echo json_encode(['success' => false, 'error' => 'No data provided']);
+                return;
             }
-            $technicalData['ip_address'] = $ip;
-        }
+            
+            $page = $data['page'] ?? 'unknown';
+            $technicalData = $data['technicalData'] ?? [];
+            
+            // Add server-side IP if not provided or to be sure
+            if (!isset($technicalData['ip_address'])) {
+                $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+                
+                // Try to get more accurate IP if behind proxy
+                if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                    $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                    $ip = trim($ips[0]);
+                }
+                $technicalData['ip_address'] = $ip;
+            }
 
-        require_once 'app/Models/VisitLog.php';
-        $visitLog = new VisitLog();
-        $visitLog->logVisit($page, $technicalData);
-        
-        echo json_encode(['success' => true]);
+            require_once 'app/Models/VisitLog.php';
+            $visitLog = new VisitLog();
+            $visitLog->logVisit($page, $technicalData);
+            
+            echo json_encode(['success' => true]);
+        } catch (Throwable $e) {
+            error_log("logVisit error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
     }
 }

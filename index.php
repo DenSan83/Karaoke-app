@@ -316,10 +316,11 @@ switch ($route) {
             try {
                 $controller = new ApiController();
                 $controller->logVisit();
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 header('Content-Type: application/json');
                 http_response_code(500);
-                echo json_encode(['error' => $e->getMessage()]);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                error_log("API Error (api/log-visit): " . $e->getMessage());
             }
         } else {
             header('Content-Type: application/json');
