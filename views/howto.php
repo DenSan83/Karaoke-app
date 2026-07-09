@@ -15,7 +15,7 @@ if (!isset($basePath)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Primary SEO -->
-    <title>How to Host a Karaoke Party at Home | Montreal Karaoke App</title>
+    <title>How to Use Your Karaoke App | Karaoke App</title>
     <meta name="description" content="Step-by-step guide to hosting your own karaoke party in Montreal. Set up the screen, invite guests with a code or QR, manage the song queue and sing all night.">
     <meta name="keywords" content="karaoke Montreal, soirée karaoké Montréal, karaoke party at home, karaoké maison, how to host karaoke, karaoke app Montreal, karaoké application, fête karaoké, karaoke night Montreal, karaoke party guide">
     <meta name="robots" content="index, follow">
@@ -23,8 +23,8 @@ if (!isset($basePath)) {
 
     <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="How to Host a Karaoke Party at Home | Montreal Karaoke App">
-    <meta property="og:description" content="Everything you need to run a karaoke night from home. Pair a screen, invite friends with a QR code, and manage the queue — all from your phone.">
+    <meta property="og:title" content="How to Use Your Karaoke App | Karaoke App">
+    <meta property="og:description" content="Everything you need to use your karaoke app. Pair a screen, invite friends with a QR code, and manage the queue — all from your phone.">
     <meta property="og:url" content="https://devdensan.com/en/howto">
     <meta property="og:image" content="https://devdensan.com/public/media/karaoke_logo.png">
     <meta property="og:locale" content="en_CA">
@@ -32,8 +32,8 @@ if (!isset($basePath)) {
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="How to Host a Karaoke Party at Home | Montreal Karaoke App">
-    <meta name="twitter:description" content="Everything you need to run a karaoke night from home. Pair a screen, invite friends with a QR code, and manage the queue — all from your phone.">
+    <meta name="twitter:title" content="How to Use Your Karaoke App | Karaoke App">
+    <meta name="twitter:description" content="Everything you need to use your karaoke app. Pair a screen, invite friends with a QR code, and manage the queue — all from your phone.">
     <meta name="twitter:image" content="https://devdensan.com/public/media/karaoke_logo.png">
 
     <!-- Structured Data (FAQ schema for search snippets) -->
@@ -41,8 +41,8 @@ if (!isset($basePath)) {
     {
         "@context": "https://schema.org",
         "@type": "HowTo",
-        "name": "How to Host a Karaoke Party at Home",
-        "description": "Step-by-step guide to hosting your own karaoke party using the Party Time app in Montreal.",
+        "name": "How to Use Your Karaoke App",
+        "description": "Step-by-step guide to use your karaoke app in Montreal.",
         "step": [
             {
                 "@type": "HowToStep",
