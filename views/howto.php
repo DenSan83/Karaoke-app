@@ -192,7 +192,7 @@
         tabs.forEach(btn => {
             btn.addEventListener('click', function () {
                 const tab = this.dataset.tab;
-                history.replaceState(null, '', '#' + tab);
+                history.replaceState(null, '', window.location.pathname + '#' + tab);
                 openTab(tab);
             });
         });
