@@ -571,6 +571,12 @@ switch ($route) {
         $controller->searchSongs();
         break;
 
+    case 'en/howto':
+        $data = ['basePath' => $basePath];
+        extract($data);
+        require_once 'views/howto.php';
+        break;
+
     default:
         http_response_code(404);
         echo '404 - Not Found';

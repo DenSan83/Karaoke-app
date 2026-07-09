@@ -1,0 +1,244 @@
+:root {
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --primary-color: #bb86fc;
+    --secondary-color: #03dac6;
+    --muted-color: #888;
+    --border-color: #333;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.howto-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 16px 60px;
+}
+
+.howto-card {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 740px;
+    overflow: hidden;
+}
+
+/* Header */
+.howto-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 28px 28px 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.howto-logo img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+h1 {
+    margin: 12px 28px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.howto-intro {
+    margin: 10px 28px 0;
+    color: var(--muted-color);
+    font-size: 0.95rem;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    background-color: #2a2a2a;
+    border-bottom: 1px solid var(--border-color);
+    margin-top: 24px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px;
+    background: none;
+    border: none;
+    color: var(--muted-color);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.25s;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    color: #fff;
+    background-color: #333;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: #333;
+}
+
+/* Tab content */
+.tab-content {
+    display: none;
+    padding: 28px;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Steps list */
+.howto-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.howto-steps > li {
+    counter-increment: step;
+    background-color: #1a1a1a;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px 22px;
+    position: relative;
+    padding-left: 64px;
+}
+
+.howto-steps > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 18px;
+    top: 18px;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--primary-color), #9d50bb);
+    color: #000;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.howto-steps h2 {
+    margin: 0 0 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.howto-steps p {
+    margin: 0 0 10px;
+    color: var(--muted-color);
+    font-size: 0.95rem;
+}
+
+.howto-steps ul {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.howto-steps ul li {
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.howto-steps strong {
+    color: #fff;
+}
+
+.howto-steps code {
+    background-color: #2a2a2a;
+    color: var(--secondary-color);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+/* Inline link */
+.howto-link {
+    color: var(--secondary-color);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(3, 218, 198, 0.4);
+    transition: color 0.2s, border-bottom-color 0.2s;
+}
+
+.howto-link:hover {
+    color: #fff;
+    border-bottom-color: #fff;
+}
+
+/* Outro */
+.howto-outro {
+    margin: 28px 0 0;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Mobile */
+@media (max-width: 520px) {
+    .howto-page {
+        padding: 16px 8px 40px;
+    }
+
+    h1 {
+        font-size: 1.2rem;
+        margin: 10px 16px 0;
+    }
+
+    .howto-logo,
+    .howto-intro {
+        padding-left: 0;
+        margin-left: 16px;
+        margin-right: 16px;
+    }
+
+    .tab-content {
+        padding: 18px 16px;
+    }
+
+    .howto-steps > li {
+        padding-left: 54px;
+        padding-right: 14px;
+    }
+}

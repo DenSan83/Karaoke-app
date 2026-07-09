@@ -17,13 +17,13 @@ Welcome! Your party has been created by the superadmin. Follow these steps to ge
 3. **Invite Your Friends**
    - To let your friends join the party, you need to give them an **Invite Code**.
    - In your Admin Dashboard, go to **Options** > **Access Codes**.
-   - Here you can see the existing code or create a new one (e.g., "KARAOKE2026").
+   - Here you can see the existing code or generate a new one (e.g., "KARAOKE2026").
    - You can also enable a **QR Code** that friends can scan to join instantly.
    - Your friends should go to the app's main URL, enter the invite code, and then enter their name.
    - Now they're ready to make requests.
 
 4. **Manage the Requests**
-   - Go to **Options** > **Request** and accept (or refuse) the guest's requests.
+   - Go to **Request** and accept (or refuse) the guests' requests.
    
 5. **Manage the Show**
    - As the admin, you have full control over the playlist from your dashboard.
@@ -33,8 +33,8 @@ Welcome! Your party has been created by the superadmin. Follow these steps to ge
    - **Remove**: If a song shouldn't be played, you can remove it from the queue.
 
 6. **Additional Options**
-   - **Word Filter**: You can set "Must have" words (like "karaoke") or "Must not have" words to ensure only the right types of videos are added. Guest's requests will not be blocked, only warned. As an admin, you have the last word to accept/refuse.
-   - **List and Clean**: Select **Download list** if you want to keep a register of the playlist. Select **Clean list** if you want to remove all songs from the queue. Click on  **Execute**.
+   - **Word Filter**: You can set "Must have" words (like "karaoke") or "Must not have" words to ensure only the right types of videos are added. Guests' requests will not be blocked, only warned. As an admin, you have the last word to accept/refuse.
+   - **List and Clean**: Select **Download list** if you want to keep a record of the existing queue. Select **Clean list** if you want to remove all songs from the queue. Click on **Execute**.
 
 ## For the guests
 
@@ -44,7 +44,7 @@ Welcome! Your party has been created by the superadmin. Follow these steps to ge
    - Head back to the app.
 
 2. **Requesting Songs**
-   - Add your URl in the **Request a Song** field and hit the **Send** button.
-   - The song will be added to the "Current Queue" in your Admin Dashboard and will appear on the Party Screen.
+   - Add your URL in the **Request a Song** field and hit the **Send (➜)** button.
+   - The song will be added to the "Current Queue" in your Admin's Dashboard and will later appear on the Party Screen.
 
 Enjoy the party and sing your heart out!
