@@ -2,6 +2,7 @@
 #ini_set('display_errors', 1);
 #ini_set('display_startup_errors', 1);
 #error_reporting(E_ALL);
+
 // Set session cookie and garbage collector lifetime to 4 hours (14400 seconds)
 ini_set('session.gc_maxlifetime', 14400);
 session_set_cookie_params(14400);
@@ -311,8 +312,19 @@ switch ($route) {
         break;
 
     case 'api/log-visit':
-        $controller = new ApiController();
-        $controller->logVisit();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $controller = new ApiController();
+                $controller->logVisit();
+            } catch (Exception $e) {
+                header('Content-Type: application/json');
+                http_response_code(500);
+                echo json_encode(['error' => $e->getMessage()]);
+            }
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+        }
         break;
 
     case 'api/superadmin/bell/count':

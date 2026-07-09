@@ -467,16 +467,14 @@ class ApiController {
         
         // Add server-side IP if not provided or to be sure
         if (!isset($technicalData['ip_address'])) {
-            require_once 'app/Models/ClientLog.php';
-            $clientLog = new ClientLog();
-            // ClientLog::getIpAddress is private, but we can replicate it or use REMOTE_ADDR
-            $technicalData['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
             
             // Try to get more accurate IP if behind proxy
             if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
                 $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-                $technicalData['ip_address'] = trim($ips[0]);
+                $ip = trim($ips[0]);
             }
+            $technicalData['ip_address'] = $ip;
         }
 
         require_once 'app/Models/VisitLog.php';
