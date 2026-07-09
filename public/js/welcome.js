@@ -111,23 +111,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Contact button bell increment
+    // Contact button bell increment and visit log
     const contactBtn = document.querySelector('.contact-btn');
     if (contactBtn) {
         contactBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const href = contactBtn.getAttribute('href');
-            const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/superadmin/bell/increment';
+            const basePath = typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '';
+            const bellUrl = basePath + 'api/superadmin/bell/increment';
             
-            fetch(apiUrl)
-                .then(() => {
-                    window.location.href = href;
-                })
-                .catch(err => {
-                    console.error('Error incrementing bell:', err);
-                    window.location.href = href;
-                });
+            // Log the visit first
+            logVisit('Contact me button (homepage)').finally(() => {
+                fetch(bellUrl)
+                    .then(() => {
+                        window.location.href = href;
+                    })
+                    .catch(err => {
+                        console.error('Error incrementing bell:', err);
+                        window.location.href = href;
+                    });
+            });
         });
+    }
+
+    async function logVisit(pageName) {
+        const basePath = typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '';
+        const technicalData = {
+            browser: getBrowser(),
+            device: getDevice(),
+            language: navigator.language,
+            fingerprint: {
+                ua: navigator.userAgent,
+                screen: `${window.screen.width}x${window.screen.height}`,
+                tz: Intl.DateTimeFormat().resolvedOptions().timeZone
+            }
+        };
+
+        try {
+            await fetch(basePath + 'api/log-visit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ page: pageName, technicalData })
+            });
+        } catch (e) {
+            console.error('Failed to log visit', e);
+        }
+    }
+
+    function getBrowser() {
+        const ua = navigator.userAgent;
+        if (ua.includes('MSIE') || ua.includes('Trident')) return 'Internet Explorer';
+        if (ua.includes('Firefox')) return 'Firefox';
+        if (ua.includes('Chrome')) return 'Chrome';
+        if (ua.includes('Safari')) return 'Safari';
+        if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera';
+        return 'Unknown';
+    }
+
+    function getDevice() {
+        const ua = navigator.userAgent;
+        if (/mobile/i.test(ua)) return 'Mobile';
+        if (/tablet/i.test(ua)) return 'Tablet';
+        return 'Desktop';
     }
 
     // Check for session ended message
