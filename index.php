@@ -317,6 +317,21 @@ switch ($route) {
                 $controller = new ApiController();
                 $controller->logVisit();
             } catch (Throwable $e) {
+                // Log the error to SystemLog for superadmin visibility
+                try {
+                    require_once 'app/Models/SystemLog.php';
+                    $systemLog = new SystemLog('superadmin');
+                    $systemLog->log('api_error', [
+                        'endpoint' => 'api/log-visit',
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                } catch (Throwable $logError) {
+                    error_log("Failed to log API error to SystemLog: " . $logError->getMessage());
+                }
+
                 header('Content-Type: application/json');
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);

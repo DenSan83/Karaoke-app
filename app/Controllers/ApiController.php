@@ -490,6 +490,21 @@ class ApiController {
             
             echo json_encode(['success' => true]);
         } catch (Throwable $e) {
+            // Log the error to SystemLog for superadmin visibility
+            try {
+                require_once 'app/Models/SystemLog.php';
+                $systemLog = new SystemLog('superadmin');
+                $systemLog->log('api_error', [
+                    'endpoint' => 'ApiController::logVisit',
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            } catch (Throwable $logError) {
+                error_log("Failed to log API error to SystemLog: " . $logError->getMessage());
+            }
+
             error_log("logVisit error: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
