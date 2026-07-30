@@ -1,0 +1,4 @@
+# This folder lives inside the document root and the front-controller rewrite only
+# fires for paths that are NOT real files, so without this every test script here
+# would be executable over HTTP.
+Require all denied

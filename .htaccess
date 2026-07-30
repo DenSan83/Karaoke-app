@@ -2,7 +2,14 @@ RewriteEngine On
 #RewriteBase /
 
 # Deny access to sensitive files (Apache 2.4 syntax)
-<FilesMatch "^\.ht|\.json$|\.md$">
+#
+# The rewrite below only fires for paths that are NOT real files, so anything that
+# exists on disk here is served or executed directly unless it is denied first:
+#   ^\.ht      .htaccess and friends
+#   ^\.env     credentials; Apache would serve these as plain text
+#   ^debug_    developer scripts, runnable by anyone who guesses the name
+#   ^migrate_  the schema migration; only ever meant to run from the command line
+<FilesMatch "^\.ht|^\.env|^debug_|^migrate_|\.json$|\.md$">
     Require all denied
 </FilesMatch>
 
