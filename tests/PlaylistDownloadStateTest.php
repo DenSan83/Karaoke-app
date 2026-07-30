@@ -1,4 +1,5 @@
 <?php
+/**Testfile: PlaylistDownloadStateTest*/
 /**
  * Playlist download state: the failure flag, the stall reconciliation that clears a
  * stuck hourglass, the retry path, and the guard that keeps a guest-supplied video

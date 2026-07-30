@@ -72,8 +72,11 @@ if ($route !== 'installing' && strpos($route, 'api/install') !== 0) {
 }
 
 // Check if yt-dlp is available (skip check for installing routes and API)
+// The superadmin test pages are exempt as well: a missing yt-dlp is exactly the kind of
+// thing you would want to run the tests to diagnose, so they must stay reachable.
 if (!SystemCheck::checkYtDlp() &&
     $route !== 'installing' &&
+    strpos($route, 'superadmin/tests') !== 0 &&
     strpos($route, 'api/install') !== 0) {
     header('Location: ' . ($basePath ?: '') . '/installing');
     exit;
@@ -264,6 +267,22 @@ switch ($route) {
     case 'superadmin/system_info':
         $controller = new SuperAdminController();
         $controller->systemInfo();
+        break;
+
+    case 'superadmin/tests':
+        $controller = new SuperAdminController();
+        $controller->tests();
+        break;
+
+    case 'superadmin/tests/run':
+        $controller = new SuperAdminController();
+        $controller->testsRun();
+        break;
+
+    // Feeds the page above with the runner's output as it is produced.
+    case 'superadmin/tests/stream':
+        $controller = new SuperAdminController();
+        $controller->testsStream();
         break;
 
     case 'superadmin/logs':

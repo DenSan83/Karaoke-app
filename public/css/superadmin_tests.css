@@ -1,0 +1,255 @@
+/* Superadmin test runner: the list of test files and the terminal that runs them. */
+
+/* ------------------------------------------------------------------ the list -- */
+
+.tests-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.tests-meta {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.tests-binary {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    word-break: break-all;
+}
+
+.tests-list {
+    list-style: none;
+    margin: 0 0 20px 0;
+    padding: 0;
+    background: var(--card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.tests-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.tests-row:last-child {
+    border-bottom: none;
+}
+
+.tests-row:hover {
+    background: #252525;
+}
+
+/* Takes the free space so the play button is pushed to the end of the line. */
+.tests-row-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.tests-name {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.tests-count {
+    margin-left: 10px;
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+    white-space: nowrap;
+}
+
+.tests-summary {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.tests-play {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    color: var(--secondary-color);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.tests-play:hover {
+    background: var(--secondary-color);
+    color: #121212;
+    transform: scale(1.08);
+}
+
+.tests-warning {
+    background: #2a1f1f;
+    border-left: 3px solid var(--error-color);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    color: #e0c0c0;
+    line-height: 1.5;
+}
+
+.tests-empty {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 25px;
+    color: #888;
+    line-height: 1.6;
+}
+
+.tests-note {
+    color: #777;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.tests-warning code,
+.tests-empty code,
+.tests-note code {
+    font-family: 'Consolas', 'Monaco', monospace;
+    background: #1a1a1a;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--secondary-color);
+}
+
+/* -------------------------------------------------------------- the terminal -- */
+
+.tests-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.tests-target {
+    font-family: 'Consolas', 'Monaco', monospace;
+    color: var(--secondary-color);
+}
+
+.tests-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.tests-pill {
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tests-pill.running {
+    background: #3a3320;
+    color: #d7c076;
+}
+
+.tests-pill.ok {
+    background: #17301f;
+    color: #4ec97f;
+}
+
+.tests-pill.bad {
+    background: #331d22;
+    color: var(--error-color);
+}
+
+.tests-elapsed {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.terminal {
+    background: #0b0b0b;
+    border: 1px solid #262626;
+    border-radius: 8px;
+    padding: 16px 18px;
+    max-height: 70vh;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+/* Runner output is preformatted: the indentation carries meaning. */
+.tline {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #c8c8c8;
+}
+
+.tline.command {
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.tline.file {
+    color: var(--primary-color);
+    margin-top: 8px;
+}
+
+.tline.pass {
+    color: #4ec97f;
+}
+
+.tline.fail {
+    color: var(--error-color);
+    font-weight: bold;
+}
+
+.tline.skip {
+    color: #d7c076;
+}
+
+.tline.detail {
+    color: #9a9a9a;
+}
+
+.tline.rule {
+    color: #444;
+}
+
+.tline.summary-ok {
+    color: #4ec97f;
+    font-weight: bold;
+}
+
+.tline.summary-bad {
+    color: var(--error-color);
+    font-weight: bold;
+}
+
+/* Startup noise from php.ini (a failed extension load, say) is real output but not a
+   test result, so it is dimmed rather than coloured like a failure. */
+.tline.stderr {
+    color: #8a7f5a;
+}
+
+.tline.error {
+    color: var(--error-color);
+}
+
+.tline.blank {
+    min-height: 0.8em;
+}

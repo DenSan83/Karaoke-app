@@ -9,7 +9,23 @@ the runner is plain PHP so it works on the production server as-is.
 ```
 php tests/run.php              # everything
 php tests/run.php Playlist     # only files whose name contains "Playlist"
+php tests/run.php UiWiringTest # exactly that file
 ```
+
+An exact file name beats the substring match, which is what lets one play button in the
+browser run one file and nothing else.
+
+### From the browser
+
+A superadmin can also run the suite from **Management → Tests**
+(`/superadmin/tests`). That page lists the files below with a play button each, and
+`/superadmin/tests/run` streams the output live into a terminal view.
+
+It does not include the suite in the request — `tests/bootstrap.php` refuses to run
+outside the CLI SAPI. It resolves a real command-line interpreter with
+`SystemCheck::resolvePhpCli()` and spawns `tests/run.php` as a child process, which
+makes the page a live proof that CLI resolution works on the server. Runs are
+serialised with a lock file, because two at once would share the scratch database.
 
 The runner exits `0` when everything passed and `1` if anything failed, so it can be
 dropped straight into a pre-commit hook or CI step.
@@ -41,10 +57,22 @@ here would be executable from a browser.
 | `PlaylistDownloadStateTest.php` | `reconcileDownload()` across the full matrix (finished / empty file / spawning / live / stalled / orphaned / just queued), `markDownloadFailed()`, `markDownloadComplete()`, `retryDownload()`, `getAll()`'s key shape and self-healing, `pruneTempArtifacts()`, and `VIDEO_ID_PATTERN`. |
 | `SchemaSelfHealingTest.php` | `download_failed` / `download_error` must appear in **both** the migration and `SystemCheck::checkDatabase()` — that pairing is what makes a `git pull` upgrade an existing install. Includes a functional upgrade from the pre-change schema, run twice to prove idempotency. |
 | `SystemInfoTest.php` | `getYtDlpInfo()` / `getPhpInfo()`: the payload shape, strict version parsing that isn't fooled by yt-dlp's "older than 90 days" banner, that banner being reported as a notice and not an error, the `superadmin/system_info` endpoint, and its auth refusal. |
+| `TestsRunnerTest.php` | The browser-facing runner itself: the `Testfile` marker contract every file here must satisfy, marker-based discovery (helpers such as `bootstrap.php` are never offered as tests), the `?file=` whitelist, the three routes and their auth, and the two spawn details that are easy to undo by accident — the child is killable, and its output is captured to files rather than pipes. No case here starts a run, or the suite would run itself. |
 | `UiWiringTest.php` | The wires that break silently in a browser: route registration, controller methods, auth-before-work ordering, the admin queue's failed badge and retry button, `local_path` (not the old `local_file`), and the Informations entry living **inside** the Management dropdown. |
 
 ## Notes for anyone extending the suite
 
+* Give every new file a marker on its second line:
+
+  ```php
+  <?php
+  /**Testfile: MyThingTest*/
+  ```
+
+  The name must match the file name. That marker is how the superadmin page tells a
+  runnable test from a helper, so a file without one runs from the command line but
+  never appears in the browser. `TestsRunnerTest.php` fails if any file here is missing
+  it.
 * `download_worker.php` and `migrate_json_to_mysql.php` have top-level side effects —
   the latter runs the whole migration when `php_sapi_name() === 'cli'`. **Never
   `require` them.** Use `load_function_copy($file, $name)`, which extracts a single

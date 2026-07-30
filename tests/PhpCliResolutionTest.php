@@ -1,4 +1,5 @@
 <?php
+/**Testfile: PhpCliResolutionTest*/
 /**
  * SystemCheck::resolvePhpCli() and friends.
  *

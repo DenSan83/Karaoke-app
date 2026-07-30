@@ -1,4 +1,5 @@
 <?php
+/**Testfile: SchemaSelfHealingTest*/
 /**
  * The download_failed / download_error columns and the path that adds them.
  *

@@ -1,4 +1,5 @@
 <?php
+/**Testfile: UiWiringTest*/
 /**
  * The wiring between the new backend and the interface: routes, controller methods,
  * the retry button in the admin queue and the Informations modal in the superadmin

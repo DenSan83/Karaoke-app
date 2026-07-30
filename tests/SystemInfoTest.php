@@ -1,4 +1,5 @@
 <?php
+/**Testfile: SystemInfoTest*/
 /**
  * The data behind the superadmin "Informations" modal:
  * SystemCheck::getYtDlpInfo(), describeYtDlpSource(), getPhpInfo(), and the

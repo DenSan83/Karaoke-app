@@ -80,6 +80,7 @@
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/access_keys">Access keys bank</a>
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/logs">See logs</a>
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/clients">See clients</a>
+                    <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/tests">Tests</a>
                     <a href="#" class="dropdown-info" onclick="event.preventDefault(); showInfoModal();">
                         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"></circle>

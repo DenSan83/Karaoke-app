@@ -451,7 +451,10 @@ function test_db() {
         $connection->exec("CREATE DATABASE IF NOT EXISTS `{$credentials['name']}` CHARACTER SET utf8mb4");
         $connection->exec("USE `{$credentials['name']}`");
     } catch (PDOException $e) {
-        skip_test('no MySQL server available (' . $e->getMessage() . ')');
+        // Either no server at all, or a user without rights to create the scratch
+        // schema — which is the likely case on a production host. Both only mean the
+        // database-backed cases cannot run here, so they skip rather than fail.
+        skip_test('no scratch database available (' . $e->getMessage() . ')');
     }
 
     test_db_create_tables($connection);

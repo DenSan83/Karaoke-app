@@ -429,4 +429,442 @@ class SuperAdminController {
         
         echo json_encode(['success' => true, 'keys' => $cleanKeys]);
     }
+
+    /* ------------------------------------------------------------- test runner -- */
+
+    /**
+     * A runnable test is identified by a marker comment near the top of the file: a doc
+     * comment reading "Testfile: UiWiringTest", which tests/UiWiringTest.php carries on
+     * its second line.
+     *
+     * Discovery keys off that marker rather than off the file name, so the folder can
+     * hold helpers (bootstrap.php, run.php) without them being offered as tests, and a
+     * newly dropped file appears in the list the moment it carries the marker.
+     */
+    const TESTFILE_MARKER = '/^\s*\/\*+\s*Testfile\s*:\s*([A-Za-z0-9_]+)\s*\*+\//mi';
+
+    /**
+     * Every runnable test file, keyed by the name its marker declares.
+     *
+     * This list is the whitelist used to validate ?file=: anything not in it does not
+     * exist as far as the runner is concerned.
+     *
+     * @return array name => {name, file, path, cases, summary}
+     */
+    private function discoverTestFiles() {
+        $directory = realpath(__DIR__ . '/../../tests');
+        if ($directory === false) {
+            return [];
+        }
+
+        $found = [];
+        foreach (glob($directory . DIRECTORY_SEPARATOR . '*.php') ?: [] as $path) {
+            $contents = @file_get_contents($path);
+            if ($contents === false || !preg_match(self::TESTFILE_MARKER, $contents, $matches)) {
+                continue;
+            }
+
+            // The declared name has to agree with the file name, because the name is
+            // what gets handed to the runner as its filter. A mismatch would run a
+            // different file than the one the button says.
+            $name = $matches[1];
+            if (strcasecmp($name, basename($path, '.php')) !== 0) {
+                continue;
+            }
+
+            $found[$name] = [
+                'name' => $name,
+                'file' => basename($path),
+                'path' => $path,
+                'cases' => preg_match_all('/^test\(/m', $contents),
+                'summary' => $this->readTestSummary($contents)
+            ];
+        }
+
+        ksort($found);
+        return $found;
+    }
+
+    /**
+     * First sentence of the file's docblock, used as the one-line description in the
+     * list. Purely cosmetic: an undocumented file still runs.
+     */
+    private function readTestSummary($contents) {
+        if (!preg_match('/\/\*\*\s*\n(.*?)\*\//s', $contents, $matches)) {
+            return '';
+        }
+
+        $text = preg_replace('/^\s*\*\s?/m', '', $matches[1]);
+        $text = trim(preg_replace('/\s+/', ' ', $text));
+        if ($text === '') {
+            return '';
+        }
+
+        // Prefer a whole first sentence; otherwise trim on a word boundary.
+        if (preg_match('/^(.{20,150}?\.)(\s|$)/', $text, $sentence)) {
+            return $sentence[1];
+        }
+        if (mb_strlen($text) > 150) {
+            $text = mb_substr($text, 0, 150);
+            $lastSpace = mb_strrpos($text, ' ');
+            if ($lastSpace > 60) {
+                $text = mb_substr($text, 0, $lastSpace);
+            }
+            return $text . '…';
+        }
+        return $text;
+    }
+
+    /**
+     * Resolve a ?file= parameter against the discovered tests.
+     *
+     * @return array|null the test entry, or null when no such test exists
+     */
+    private function resolveTestFile($requested) {
+        if (!is_string($requested) || trim($requested) === '') {
+            return null;
+        }
+
+        // basename() strips any path the caller tried to smuggle in; the lookup below
+        // is what actually authorises the choice.
+        $name = basename(trim($requested), '.php');
+        foreach ($this->discoverTestFiles() as $key => $test) {
+            if (strcasecmp($key, $name) === 0) {
+                return $test;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The list of runnable tests, each with a play button.
+     */
+    public function tests() {
+        global $basePath;
+        require_once 'app/Services/SystemCheck.php';
+
+        $tests = $this->discoverTestFiles();
+        $php = SystemCheck::resolvePhpCli();
+
+        $data = ['basePath' => $basePath, 'tests' => $tests, 'php' => $php];
+        extract($data);
+        require_once 'views/superadmin/tests.php';
+    }
+
+    /**
+     * The terminal-style page. It only renders a shell; the output arrives from
+     * testsStream() so results can appear while the suite is still running.
+     */
+    public function testsRun() {
+        global $basePath;
+        require_once 'app/Services/SystemCheck.php';
+
+        $requested = isset($_GET['file']) ? $_GET['file'] : null;
+        $selected = null;
+
+        if ($requested !== null && trim($requested) !== '') {
+            $selected = $this->resolveTestFile($requested);
+            if ($selected === null) {
+                http_response_code(404);
+                $data = [
+                    'basePath' => $basePath,
+                    'requested' => (string)$requested,
+                    'tests' => $this->discoverTestFiles()
+                ];
+                extract($data);
+                require_once 'views/superadmin/tests_missing.php';
+                return;
+            }
+        }
+
+        $php = SystemCheck::resolvePhpCli();
+        $data = ['basePath' => $basePath, 'selected' => $selected, 'php' => $php];
+        extract($data);
+        require_once 'views/superadmin/tests_run.php';
+    }
+
+    /**
+     * Run the suite in a child process and stream its output as newline-delimited
+     * JSON, one object per line.
+     *
+     * The tests refuse to run outside the CLI SAPI on purpose, so this never includes
+     * them: it resolves a real CLI interpreter with SystemCheck::resolvePhpCli() — the
+     * same function the download worker depends on — and spawns tests/run.php.
+     *
+     * EventSource is deliberately not used on the other end: it reconnects when a
+     * stream ends, which would silently start the whole suite over again.
+     */
+    public function testsStream() {
+        require_once 'app/Services/SystemCheck.php';
+
+        header('Content-Type: application/x-ndjson; charset=utf-8');
+        header('Cache-Control: no-store');
+        header('X-Accel-Buffering: no'); // keeps a reverse proxy from buffering the run
+
+        // Nothing may sit between an echo and the socket, or the output stops being
+        // live and arrives in one lump at the end.
+        @ini_set('zlib.output_compression', '0');
+        while (ob_get_level() > 0) {
+            @ob_end_flush();
+        }
+        @ob_implicit_flush(true);
+        @set_time_limit(0);
+        ignore_user_abort(false);
+
+        $requested = isset($_GET['file']) ? $_GET['file'] : null;
+        $filter = null;
+        if ($requested !== null && trim($requested) !== '') {
+            $test = $this->resolveTestFile($requested);
+            if ($test === null) {
+                $this->streamEvent(['type' => 'error', 'text' => 'No such test exists.']);
+                $this->streamEvent(['type' => 'done', 'code' => 2]);
+                return;
+            }
+            $filter = $test['name'];
+        }
+
+        $projectRoot = realpath(__DIR__ . '/../..');
+        $runner = $projectRoot . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'run.php';
+        if (!is_file($runner)) {
+            $this->streamEvent(['type' => 'error', 'text' => 'tests/run.php is missing.']);
+            $this->streamEvent(['type' => 'done', 'code' => 2]);
+            return;
+        }
+
+        $php = SystemCheck::resolvePhpCli();
+        if (empty($php['binary'])) {
+            $this->streamEvent([
+                'type' => 'error',
+                'text' => 'No PHP command-line interpreter could be found, so the tests cannot be run.'
+            ]);
+            $this->streamEvent([
+                'type' => 'error',
+                'text' => 'Running SAPI: ' . $php['sapi'] . ' — PHP_BINARY: ' . $php['php_binary']
+            ]);
+            foreach ($php['attempts'] as $attempt) {
+                $this->streamEvent([
+                    'type' => 'stderr',
+                    'text' => '  tried ' . $attempt['candidate'] . ' — ' . $attempt['result']
+                ]);
+            }
+            $this->streamEvent(['type' => 'done', 'code' => 1]);
+            return;
+        }
+
+        // Two runs at once would share the scratch database and trip over each other,
+        // producing failures that have nothing to do with the code. flock releases
+        // itself when the process ends, so there is no stale lock to clear.
+        $lock = @fopen($projectRoot . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'tests.lock', 'c');
+        if ($lock && !@flock($lock, LOCK_EX | LOCK_NB)) {
+            $this->streamEvent([
+                'type' => 'error',
+                'text' => 'A test run is already in progress. Wait for it to finish and try again.'
+            ]);
+            $this->streamEvent(['type' => 'done', 'code' => 2]);
+            return;
+        }
+
+        $this->streamEvent([
+            'type' => 'start',
+            'target' => $filter === null ? 'all tests' : $filter,
+            'binary' => $php['binary']
+        ]);
+
+        $this->streamTestProcess($php['binary'], $runner, $filter, $projectRoot);
+
+        if ($lock) {
+            @flock($lock, LOCK_UN);
+            @fclose($lock);
+        }
+    }
+
+    /**
+     * Spawn the runner and forward its output line by line.
+     */
+    private function streamTestProcess($binary, $runner, $filter, $projectRoot) {
+        $parts = [$binary, $runner];
+        if ($filter !== null) {
+            $parts[] = $filter;
+        }
+
+        // The array form leaves the quoting to PHP, and bypass_shell means the handle
+        // refers to the interpreter itself rather than a cmd.exe wrapper — without it
+        // the child survives being terminated on Windows.
+        $isWindows = DIRECTORY_SEPARATOR === '\\';
+        $command = PHP_VERSION_ID >= 70400
+            ? $parts
+            : implode(' ', array_map('escapeshellarg', $parts));
+        $options = $isWindows ? ['bypass_shell' => true] : [];
+
+        // stdin comes from the null device: the runner never reads it, and a child that
+        // did would otherwise hang this request forever.
+        //
+        // Output is captured to files rather than pipes, for two reasons that both bite
+        // on a long run. stream_select() does not work on Windows anonymous pipes — it
+        // supports sockets only — so a pipe reader silently starves partway through
+        // while the runner keeps going. And a pipe only reports end-of-file once every
+        // process holding its write end is gone; the suite starts a built-in web server
+        // of its own, which inherits that handle, so EOF could arrive long after the
+        // runner finished. Polling a file has neither problem.
+        $stem = $projectRoot . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR
+            . 'tests_run_' . getmypid() . '_' . mt_rand(1000, 9999);
+        $paths = [1 => $stem . '.out', 2 => $stem . '.err'];
+
+        $descriptors = [
+            0 => ['file', $isWindows ? 'NUL' : '/dev/null', 'r'],
+            1 => ['file', $paths[1], 'w'],
+            2 => ['file', $paths[2], 'w']
+        ];
+
+        $pipes = [];
+        $process = @proc_open($command, $descriptors, $pipes, $projectRoot, null, $options);
+        if (!is_resource($process)) {
+            $this->streamEvent([
+                'type' => 'error',
+                'text' => 'The test runner could not be started (proc_open failed or is disabled).'
+            ]);
+            $this->streamEvent(['type' => 'done', 'code' => 1]);
+            @unlink($paths[1]);
+            @unlink($paths[2]);
+            return;
+        }
+
+        // Closing the tab aborts this script; without this the suite would keep
+        // running on the server with nobody reading it. The scratch files go last,
+        // because Windows refuses to unlink one the runner still has open.
+        $killed = false;
+        register_shutdown_function(function () use (&$process, &$killed, $paths) {
+            if (!$killed && is_resource($process)) {
+                $killed = true;
+                self::terminateProcess($process);
+            }
+            @unlink($paths[1]);
+            @unlink($paths[2]);
+        });
+
+        $handles = [1 => null, 2 => null];
+        $offsets = [1 => 0, 2 => 0];
+        $buffers = [1 => '', 2 => ''];
+
+        // Forward every complete line written since the last look. $flush also releases
+        // a trailing fragment, which is what the runner leaves behind if it dies
+        // mid-line.
+        $drain = function ($flush) use ($paths, &$handles, &$offsets, &$buffers) {
+            foreach ($paths as $key => $path) {
+                if (!is_resource($handles[$key])) {
+                    $handles[$key] = @fopen($path, 'rb');
+                    if (!is_resource($handles[$key])) {
+                        continue;
+                    }
+                }
+
+                // Seeking also clears the end-of-file flag the previous read set, so the
+                // handle keeps seeing bytes appended after it caught up.
+                @fseek($handles[$key], $offsets[$key]);
+                $chunk = @stream_get_contents($handles[$key]);
+                if ($chunk === false) {
+                    $chunk = '';
+                }
+                $offsets[$key] += strlen($chunk);
+                $buffers[$key] .= $chunk;
+
+                $type = $key === 2 ? 'stderr' : 'line';
+                while (($position = strpos($buffers[$key], "\n")) !== false) {
+                    $line = rtrim(substr($buffers[$key], 0, $position), "\r");
+                    $buffers[$key] = substr($buffers[$key], $position + 1);
+                    $this->streamEvent(['type' => $type, 'text' => $line]);
+                }
+
+                if ($flush && $buffers[$key] !== '') {
+                    $this->streamEvent(['type' => $type, 'text' => rtrim($buffers[$key], "\r")]);
+                    $buffers[$key] = '';
+                }
+            }
+        };
+
+        $completed = false;
+        $exitCode = -1;
+        $polls = 0;
+
+        while (true) {
+            $status = @proc_get_status($process);
+            $running = is_array($status) && !empty($status['running']);
+
+            $drain(false);
+
+            if (!$running) {
+                // Anything written in the last moments still has to go out.
+                $drain(true);
+                $completed = true;
+                if (is_array($status) && isset($status['exitcode'])) {
+                    $exitCode = (int)$status['exitcode'];
+                }
+                break;
+            }
+
+            if (connection_aborted()) {
+                break;
+            }
+
+            // A quiet stretch still needs the odd write: it is what lets
+            // connection_aborted() notice a closed tab, and it keeps any proxy in
+            // front of us from timing the response out.
+            if (++$polls % 80 === 0) {
+                $this->streamEvent(['type' => 'ping']);
+            }
+
+            usleep(120000);
+        }
+
+        foreach ($handles as $handle) {
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+        }
+
+        if (!$completed) {
+            // Nobody is listening any more. The shutdown handler kills the tree and
+            // clears the scratch files.
+            return;
+        }
+
+        $killed = true;
+        // proc_get_status already reaped the child, so its exit code is the real one —
+        // proc_close returns -1 once that has happened.
+        @proc_close($process);
+        @unlink($paths[1]);
+        @unlink($paths[2]);
+        $this->streamEvent(['type' => 'done', 'code' => $exitCode]);
+    }
+
+    /**
+     * Kill a child process and everything it started.
+     *
+     * proc_terminate only reaches the immediate child, which on Windows is not enough:
+     * proc_close would then block forever waiting on the tree.
+     */
+    private static function terminateProcess($process) {
+        $status = @proc_get_status($process);
+        if (DIRECTORY_SEPARATOR === '\\' && !empty($status['pid'])) {
+            @exec('taskkill /F /T /PID ' . (int)$status['pid'] . ' 2>&1', $output, $code);
+        } else {
+            @proc_terminate($process, defined('SIGKILL') ? SIGKILL : 9);
+        }
+        @proc_close($process);
+    }
+
+    /**
+     * One newline-delimited JSON object, pushed out immediately.
+     */
+    private function streamEvent(array $event) {
+        $flags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+        if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+            // Test output can carry anything, including bytes that are not valid UTF-8.
+            // Substituting keeps one bad line from killing the whole stream.
+            $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+        }
+
+        echo json_encode($event, $flags) . "\n";
+        flush();
+    }
 }

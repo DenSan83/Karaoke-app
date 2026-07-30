@@ -2,8 +2,9 @@
 /**
  * Test runner.
  *
- *   php tests/run.php            run every *Test.php in this folder
- *   php tests/run.php Playlist   run only files whose name matches the filter
+ *   php tests/run.php                  run every *Test.php in this folder
+ *   php tests/run.php Playlist         run every file whose name contains "Playlist"
+ *   php tests/run.php UiWiringTest     run exactly that file
  *
  * Exits 0 when everything passed or was skipped, 1 on the first failure, so it can
  * be wired into a pre-commit hook or CI step later.
@@ -14,6 +15,20 @@ require_once __DIR__ . '/bootstrap.php';
 $filter = $argv[1] ?? null;
 $files = glob(__DIR__ . DIRECTORY_SEPARATOR . '*Test.php') ?: [];
 sort($files);
+
+// An exact file name wins over the substring match, so asking for "SystemInfoTest"
+// can never also pull in a future "MySystemInfoTest". The superadmin runner relies on
+// this to guarantee that one play button runs one file.
+if ($filter !== null) {
+    $wanted = strtolower(basename($filter, '.php'));
+    foreach ($files as $file) {
+        if (strtolower(basename($file, '.php')) === $wanted) {
+            $files = [$file];
+            $filter = null;
+            break;
+        }
+    }
+}
 
 foreach ($files as $file) {
     if ($filter !== null && stripos(basename($file), $filter) === false) {
