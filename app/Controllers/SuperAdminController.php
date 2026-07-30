@@ -105,6 +105,22 @@ class SuperAdminController {
         require_once 'views/superadmin/logs.php';
     }
 
+    /**
+     * Runtime versions behind the "Informations" modal: which yt-dlp is executed and
+     * which PHP builds serve the site and run the background worker.
+     */
+    public function systemInfo() {
+        header('Content-Type: application/json');
+        require_once 'app/Services/SystemCheck.php';
+
+        echo json_encode([
+            'yt_dlp' => SystemCheck::getYtDlpInfo(),
+            'php' => SystemCheck::getPhpInfo(),
+            'os' => PHP_OS_FAMILY . ' — ' . php_uname('s') . ' ' . php_uname('r'),
+            'server_time' => date('Y-m-d H:i:s')
+        ]);
+    }
+
     public function deleteVisitLog() {
         $visitId = $_POST['visit_id'] ?? null;
         if ($visitId) {

@@ -80,6 +80,14 @@
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/access_keys">Access keys bank</a>
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/logs">See logs</a>
                     <a href="<?= htmlspecialchars($basePath ?? '') ?>/superadmin/clients">See clients</a>
+                    <a href="#" class="dropdown-info" onclick="event.preventDefault(); showInfoModal();">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        Informations
+                    </a>
                 </div>
             </div>
             
@@ -251,6 +259,18 @@
         </div>
     </div>
 
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <h2>System Informations</h2>
+            <div id="infoBody" class="system-info">
+                <p class="info-loading">Loading…</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-logout" onclick="hideInfoModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Hamburger Menu Toggle
         function toggleKebab(event, id) {
@@ -367,6 +387,100 @@
                     modal.style.display = 'none';
                 }
             }, 300);
+        }
+
+        function showInfoModal() {
+            const modal = document.getElementById('infoModal');
+            modal.style.display = 'flex';
+            modal.classList.add('visible');
+            loadSystemInfo();
+        }
+        function hideInfoModal() {
+            const modal = document.getElementById('infoModal');
+            modal.classList.remove('visible');
+            setTimeout(() => {
+                if (!modal.classList.contains('visible')) {
+                    modal.style.display = 'none';
+                }
+            }, 300);
+        }
+
+        function loadSystemInfo() {
+            const body = document.getElementById('infoBody');
+            body.innerHTML = '<p class="info-loading">Loading…</p>';
+            fetch('<?= htmlspecialchars($basePath ?? '') ?>/superadmin/system_info')
+                .then(r => r.json())
+                .then(data => renderSystemInfo(data))
+                .catch(() => {
+                    body.innerHTML = '';
+                    const p = document.createElement('p');
+                    p.className = 'info-notice';
+                    p.textContent = 'Could not read the system information.';
+                    body.appendChild(p);
+                });
+        }
+
+        // Values come from yt-dlp / PHP output, so every cell is written with
+        // textContent rather than innerHTML.
+        function renderSystemInfo(data) {
+            const body = document.getElementById('infoBody');
+            body.innerHTML = '';
+
+            function group(title) {
+                const wrap = document.createElement('div');
+                wrap.className = 'info-group';
+                const h = document.createElement('h3');
+                h.textContent = title;
+                wrap.appendChild(h);
+                body.appendChild(wrap);
+                return wrap;
+            }
+            function row(wrap, label, value, state) {
+                const line = document.createElement('div');
+                line.className = 'info-row';
+                const l = document.createElement('span');
+                l.className = 'info-label';
+                l.textContent = label;
+                const v = document.createElement('span');
+                v.className = 'info-value' + (state ? ' ' + state : '');
+                v.textContent = (value === null || value === undefined || value === '') ? '—' : value;
+                line.appendChild(l);
+                line.appendChild(v);
+                wrap.appendChild(line);
+                return line;
+            }
+            function notice(wrap, text, state) {
+                const p = document.createElement('p');
+                p.className = 'info-notice' + (state ? ' ' + state : '');
+                p.textContent = text;
+                wrap.appendChild(p);
+            }
+
+            const yt = data.yt_dlp || {};
+            const g1 = group('yt-dlp');
+            row(g1, 'Version', yt.version, yt.version ? 'ok' : 'bad');
+            row(g1, 'Source', yt.source);
+            row(g1, 'Path', yt.path);
+            row(g1, 'File date', yt.updated);
+            if (yt.error) notice(g1, yt.error, 'bad');
+            if (yt.notice) notice(g1, yt.notice);
+
+            const php = data.php || {};
+            const web = php.web || {};
+            const g2 = group('PHP (web server)');
+            row(g2, 'Version', web.version, 'ok');
+            row(g2, 'SAPI', web.sapi);
+            row(g2, 'Binary', web.binary);
+
+            const cli = php.cli || {};
+            const g3 = group('PHP (background worker)');
+            row(g3, 'Version', cli.version, cli.version ? 'ok' : 'bad');
+            row(g3, 'Binary', cli.binary, cli.binary ? null : 'bad');
+            if (cli.error) notice(g3, cli.error, 'bad');
+
+            const g4 = group('Server');
+            row(g4, 'OS', data.os);
+            row(g4, 'Server time', data.server_time);
         }
 
         function showEditModal(group) {
@@ -508,8 +622,10 @@
         window.onclick = function(event) {
             const createModal = document.getElementById('createModal');
             const editModal = document.getElementById('editModal');
+            const infoModal = document.getElementById('infoModal');
             if (event.target == createModal) hideCreateModal();
             if (event.target == editModal) hideEditModal();
+            if (event.target == infoModal) hideInfoModal();
         }
     </script>
 </body>

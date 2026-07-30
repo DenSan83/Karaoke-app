@@ -489,6 +489,10 @@ button:active {
     margin-left: 5px;
 }
 
+.status-badge.failed-badge {
+    color: var(--error-color);
+}
+
 .active-track {
     background-color: #383838 !important;
     /* Lighter background */
@@ -583,6 +587,14 @@ button:active {
 }
 
 .play-icon:hover {
+    background-color: rgba(3, 218, 198, 0.1);
+}
+
+.retry-icon {
+    color: var(--secondary-color);
+}
+
+.retry-icon:hover {
     background-color: rgba(3, 218, 198, 0.1);
 }
 

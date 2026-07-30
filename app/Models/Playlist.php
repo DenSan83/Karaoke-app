@@ -3,8 +3,18 @@
 require_once 'app/Services/Database.php';
 
 class Playlist {
+    /** A worker that has not written a single progress update by then never started. */
+    const SPAWN_STALL_SECONDS = 90;
+
+    /** A download that has not advanced by then is considered dead. */
+    const PROGRESS_STALL_SECONDS = 600;
+
+    /** YouTube IDs only. Anything else must never reach a shell command line. */
+    const VIDEO_ID_PATTERN = '/^[A-Za-z0-9_-]{5,20}$/';
+
     private $db;
     private $groupId;
+    private $sysLog = null;
 
     public function __construct($groupId = null) {
         $this->db = Database::getInstance();
@@ -15,12 +25,18 @@ class Playlist {
         $rows = $this->db->fetchAll("SELECT * FROM `playlist` WHERE group_id = ? ORDER BY sort_order ASC", [$this->groupId]);
         // Format to match old JSON structure (map video_id to id)
         $playlist = array_map(function($row) {
+            // Self-heal rows whose background worker finished, died or never started.
+            if (!empty($row['downloading'])) {
+                $row = $this->reconcileDownload($row);
+            }
             return [
                 'id' => $row['video_id'],
                 'title' => $row['title'],
                 'user' => $row['user'],
                 'added_at' => (int)$row['added_at'],
                 'downloading' => (bool)$row['downloading'],
+                'download_failed' => !empty($row['download_failed']),
+                'download_error' => $row['download_error'] ?? null,
                 'local_path' => $row['local_path']
             ];
         }, $rows);
@@ -75,8 +91,12 @@ class Playlist {
                 'added_at' => $addedAt
             ];
             if ($needsDownload) {
-                $newVideo['downloading'] = true;
-                $this->spawnBackgroundDownload($videoId);
+                $spawn = $this->spawnBackgroundDownload($videoId);
+                $newVideo['downloading'] = empty($spawn['error']);
+                if (!empty($spawn['error'])) {
+                    $newVideo['download_failed'] = true;
+                    $newVideo['download_error'] = $spawn['error'];
+                }
             }
             
             return ['success' => true, 'video' => $newVideo];
@@ -136,70 +156,310 @@ class Playlist {
         ];
     }
 
+    /**
+     * Launch download_worker.php in the background for a queued video.
+     *
+     * Every outcome is recorded in the superadmin activity log (type 'worker_spawn')
+     * and any failure is written back to the row, so a download can never sit on an
+     * hourglass with nothing explaining why.
+     */
     public function spawnBackgroundDownload($videoId) {
-        $workerScript = __DIR__ . '/../../download_worker.php';
-        $isWindows = DIRECTORY_SEPARATOR === '\\';
-        
-        // Log the spawn attempt
-        $logFile = __DIR__ . '/../../temp/spawn_log.txt';
-        if (!is_dir(dirname($logFile))) {
-            mkdir(dirname($logFile), 0777, true);
+        require_once __DIR__ . '/../Services/SystemCheck.php';
+
+        if (!preg_match(self::VIDEO_ID_PATTERN, (string)$videoId)) {
+            // Video IDs come from a user-supplied URL and end up on a command line.
+            return $this->failSpawn($videoId, 'Refusing to spawn: unsafe video id');
         }
-        file_put_contents($logFile, date('Y-m-d H:i:s') . " - Spawning download for {$videoId}\n", FILE_APPEND);
-        
-        if ($isWindows) {
-            // Windows: Find the actual php.exe. PHP_BINARY might point to httpd.exe in Apache.
-            $phpPath = PHP_BINARY;
-            if (strpos(strtolower($phpPath), 'httpd.exe') !== false || strpos(strtolower($phpPath), 'apache') !== false) {
-                // Try to find php.exe in WAMP's bin directory matching current version
-                $wampPhpDir = 'C:/wamp64/bin/php/php' . PHP_VERSION . '/php.exe';
-                if (file_exists($wampPhpDir)) {
-                    $phpPath = $wampPhpDir;
-                } else {
-                    // Fallback: search for any php.exe in common WAMP paths
-                    $possiblePaths = [
-                        'C:/wamp64/bin/php/php8.3.14/php.exe',
-                        'C:/wamp64/bin/php/php8.2.26/php.exe',
-                        'C:/wamp64/bin/php/php8.1.31/php.exe'
-                    ];
-                    foreach ($possiblePaths as $path) {
-                        if (file_exists($path)) {
-                            $phpPath = $path;
-                            break;
-                        }
-                    }
+
+        if (!function_exists('exec')) {
+            return $this->failSpawn($videoId, 'exec() is unavailable, cannot start the worker');
+        }
+
+        $tempDir = $this->tempDir();
+        if (!is_dir($tempDir) && !@mkdir($tempDir, 0775, true)) {
+            return $this->failSpawn($videoId, 'Cannot create temp directory', ['path' => $tempDir]);
+        }
+        $this->pruneTempArtifacts();
+
+        $workerScript = realpath(__DIR__ . '/../../download_worker.php');
+        if (!$workerScript) {
+            return $this->failSpawn($videoId, 'Worker script not found', ['expected' => __DIR__ . '/../../download_worker.php']);
+        }
+
+        $php = SystemCheck::resolvePhpCli();
+        if (empty($php['binary'])) {
+            return $this->failSpawn($videoId, 'No usable PHP CLI binary found', [
+                'web_sapi' => $php['sapi'],
+                'web_php_binary' => $php['php_binary'],
+                'attempts' => $php['attempts']
+            ]);
+        }
+
+        // Seed the progress file before spawning: its timestamp is how we later tell
+        // "the worker never started" apart from "the worker is still working".
+        $progressFile = $this->progressFilePath($videoId);
+        if (@file_put_contents($progressFile, json_encode(['status' => 'spawning', 'percent' => 0, 'ts' => time()])) === false) {
+            return $this->failSpawn($videoId, 'Cannot write progress file', ['path' => $progressFile]);
+        }
+
+        // The worker inherits stdout/stderr into this file, so a failure to even
+        // start the interpreter is captured instead of going to /dev/null.
+        $workerLog = $this->workerLogPath($videoId);
+        @unlink($workerLog);
+
+        $groupArg = preg_replace('/[^A-Za-z0-9_-]/', '', (string)$this->groupId);
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows: WScript.Shell runs it with no console window, cmd /s /c gives
+            // us the output redirection. Inside a VBS string literal "" is one quote.
+            $vbsQuote = function ($value) {
+                return '""' . str_replace('/', '\\', $value) . '""';
+            };
+            $inner = $vbsQuote($php['binary']) . ' ' . $vbsQuote($workerScript) . ' ' . $videoId . ' ' . $groupArg
+                   . ' > ' . $vbsQuote($workerLog) . ' 2>&1';
+
+            $vbsScript = $tempDir . DIRECTORY_SEPARATOR . 'spawn_' . $videoId . '.vbs';
+            $vbsContent = "Set WshShell = CreateObject(\"WScript.Shell\")\r\n"
+                        . "WshShell.Run \"cmd /s /c \"\"" . $inner . "\"\"\", 0, False\r\n";
+            if (@file_put_contents($vbsScript, $vbsContent) === false) {
+                return $this->failSpawn($videoId, 'Cannot write spawn script', ['path' => $vbsScript]);
+            }
+            $cmd = 'cscript //nologo ' . escapeshellarg($vbsScript);
+        } else {
+            $cmd = escapeshellarg($php['binary'])
+                 . ' ' . escapeshellarg($workerScript)
+                 . ' ' . escapeshellarg($videoId)
+                 . ' ' . escapeshellarg($groupArg)
+                 . ' > ' . escapeshellarg($workerLog) . ' 2>&1 &';
+        }
+
+        $output = [];
+        $exitCode = null;
+        @exec($cmd, $output, $exitCode);
+        $launcherOutput = trim(implode("\n", $output));
+
+        // NOTE: on Linux the trailing '&' means this exit code only describes the
+        // backgrounding shell, not the worker. The worker logs its own start and
+        // finish, and reconcileDownload() catches the case where it never does.
+        $this->log('worker_spawn', [
+            'status' => $exitCode === 0 ? 'spawned' : 'launcher_error',
+            'videoId' => $videoId,
+            'php_cli' => $php['binary'],
+            'web_sapi' => $php['sapi'],
+            'web_php_binary' => $php['php_binary'],
+            'command' => $cmd,
+            'launcher_exit' => $exitCode,
+            'launcher_output' => $launcherOutput !== '' ? $launcherOutput : null
+        ]);
+
+        if ($exitCode !== 0) {
+            $this->markDownloadFailed($videoId, 'Launcher exited with code ' . var_export($exitCode, true));
+            return ['error' => 'Failed to start the download worker'];
+        }
+
+        return ['success' => true, 'php_cli' => $php['binary']];
+    }
+
+    /**
+     * Record a spawn that never got off the ground, then mark the row failed.
+     */
+    private function failSpawn($videoId, $reason, $details = []) {
+        $this->log('worker_spawn', array_merge([
+            'status' => 'error',
+            'videoId' => $videoId,
+            'reason' => $reason
+        ], $details));
+
+        $this->markDownloadFailed($videoId, $reason);
+
+        return ['error' => $reason];
+    }
+
+    /**
+     * Flag a download as failed so the UI can offer a retry instead of an hourglass.
+     * Cross-group on purpose: the download failed for every queue holding this video.
+     */
+    public function markDownloadFailed($videoId, $reason, $details = []) {
+        $short = substr(preg_replace('/\s+/', ' ', trim((string)$reason)), 0, 250);
+
+        $this->db->query(
+            "UPDATE `playlist` SET downloading = 0, download_failed = 1, download_error = ? WHERE video_id = ? AND downloading = 1",
+            [$short, $videoId]
+        );
+
+        @unlink($this->progressFilePath($videoId));
+
+        if (!empty($details)) {
+            $this->log('worker_event', array_merge([
+                'status' => 'failed',
+                'videoId' => $videoId,
+                'message' => $short
+            ], $details));
+        }
+
+        return ['success' => true];
+    }
+
+    /**
+     * Clear the failure state and launch a fresh download attempt.
+     */
+    public function retryDownload($videoId) {
+        $row = $this->db->fetch(
+            "SELECT * FROM `playlist` WHERE group_id = ? AND video_id = ? LIMIT 1",
+            [$this->groupId, $videoId]
+        );
+        if (!$row) {
+            return ['error' => 'This track is not in the queue'];
+        }
+
+        // Maybe it actually succeeded and only the bookkeeping failed.
+        $localPath = $this->localVideoPath($videoId);
+        if ($localPath !== null) {
+            $this->markDownloadComplete($videoId, $localPath);
+            return ['success' => true, 'already_downloaded' => true];
+        }
+
+        @unlink($this->progressFilePath($videoId));
+        @unlink($this->workerLogPath($videoId));
+
+        $this->db->query(
+            "UPDATE `playlist` SET downloading = 1, download_failed = 0, download_error = NULL WHERE group_id = ? AND video_id = ?",
+            [$this->groupId, $videoId]
+        );
+
+        $this->log('worker_event', ['status' => 'retry_requested', 'videoId' => $videoId]);
+
+        return $this->spawnBackgroundDownload($videoId);
+    }
+
+    /**
+     * Decide whether a row still marked as downloading is alive, finished or dead.
+     * Returns the row, updated in place when its state changed.
+     */
+    private function reconcileDownload(array $row) {
+        $videoId = $row['video_id'];
+        $progressFile = $this->progressFilePath($videoId);
+
+        // yt-dlp only renames its .part file once the download is complete, so an
+        // existing non-empty .mp4 means success even if the DB never heard about it.
+        $localPath = $this->localVideoPath($videoId);
+        if ($localPath !== null) {
+            $this->markDownloadComplete($videoId, $localPath);
+            $row['downloading'] = 0;
+            $row['download_failed'] = 0;
+            $row['download_error'] = null;
+            $row['local_path'] = $localPath;
+            return $row;
+        }
+
+        $now = time();
+
+        if (file_exists($progressFile)) {
+            $progress = json_decode((string)@file_get_contents($progressFile), true) ?: [];
+            $status = $progress['status'] ?? 'unknown';
+            $lastSign = max((int)(@filemtime($progressFile) ?: 0), (int)($progress['ts'] ?? 0));
+            $age = $now - $lastSign;
+
+            if ($status === 'spawning') {
+                if ($age < self::SPAWN_STALL_SECONDS) {
+                    return $row;
+                }
+                $reason = 'Worker never started (no progress after ' . self::SPAWN_STALL_SECONDS . 's)';
+            } else {
+                if ($age < self::PROGRESS_STALL_SECONDS) {
+                    return $row;
+                }
+                $reason = 'Download stalled at ' . (float)($progress['percent'] ?? 0)
+                        . '% for over ' . self::PROGRESS_STALL_SECONDS . 's';
+            }
+        } else {
+            // No progress file at all: a row left over from before this check existed,
+            // or a worker that died between spawning and its first write.
+            if ($now - (int)$row['added_at'] < self::SPAWN_STALL_SECONDS) {
+                return $row;
+            }
+            $reason = 'No progress was ever reported for this download';
+        }
+
+        $this->markDownloadFailed($videoId, $reason, ['worker_output' => $this->readWorkerLog($videoId)]);
+
+        $row['downloading'] = 0;
+        $row['download_failed'] = 1;
+        $row['download_error'] = $reason;
+        return $row;
+    }
+
+    private function tempDir() {
+        return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'temp';
+    }
+
+    /**
+     * Drop leftover worker artifacts so temp/ cannot grow without bound.
+     *
+     * A day is far beyond both stall thresholds, so nothing belonging to a live
+     * download is ever in range. Windows in particular cannot delete a worker log
+     * while its process still holds the handle, which is why this sweep exists.
+     */
+    private function pruneTempArtifacts($maxAgeSeconds = 86400) {
+        $cutoff = time() - $maxAgeSeconds;
+        $patterns = ['worker_*.log', 'progress_*.json', 'spawn_*.vbs'];
+
+        foreach ($patterns as $pattern) {
+            foreach (glob($this->tempDir() . DIRECTORY_SEPARATOR . $pattern) ?: [] as $path) {
+                $mtime = @filemtime($path);
+                if ($mtime !== false && $mtime < $cutoff) {
+                    @unlink($path);
                 }
             }
-            
-            $vbsScript = __DIR__ . '/../../temp/spawn_' . $videoId . '.vbs';
-            
-            // Create a VBS script to run PHP in background (hidden window)
-            // Properly escape paths for VBScript
-            $phpPath = str_replace('/', '\\', $phpPath);
-            $escapedPhp = str_replace('"', '""', $phpPath);
-            $workerScriptPath = str_replace('/', '\\', realpath($workerScript));
-            $escapedWorker = str_replace('"', '""', $workerScriptPath);
-            
-            $vbsContent = "Set WshShell = CreateObject(\"WScript.Shell\")\n";
-            $vbsContent .= "WshShell.Run \"\"\"{$escapedPhp}\"\" \"\"{$escapedWorker}\"\" {$videoId}\", 0, False\n";
-            file_put_contents($vbsScript, $vbsContent);
-            
-            // Execute VBS script
-            exec("cscript //nologo \"{$vbsScript}\"");
-            
-            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Used PHP (Windows): {$phpPath}\n", FILE_APPEND);
-            file_put_contents($logFile, date('Y-m-d H:i:s') . " - VBS script created and executed\n", FILE_APPEND);
-        } else {
-            // Linux: Use & to run in background
-            // Use PHP_BINARY if it looks like a real binary, else fallback to 'php'
-            $phpPath = PHP_BINARY;
-            if (strpos($phpPath, 'php') === false) {
-                $phpPath = 'php';
+        }
+    }
+
+    private function progressFilePath($videoId) {
+        return $this->tempDir() . DIRECTORY_SEPARATOR . 'progress_' . $videoId . '.json';
+    }
+
+    private function workerLogPath($videoId) {
+        return $this->tempDir() . DIRECTORY_SEPARATOR . 'worker_' . $videoId . '.log';
+    }
+
+    /**
+     * Relative path of the downloaded file, or null when it is absent or empty.
+     */
+    private function localVideoPath($videoId) {
+        $relative = 'public/media/videos/' . $videoId . '.mp4';
+        $absolute = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR
+                  . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+
+        return (is_file($absolute) && filesize($absolute) > 0) ? $relative : null;
+    }
+
+    /**
+     * Whatever the spawned process printed before dying, trimmed for the log.
+     */
+    private function readWorkerLog($videoId) {
+        $path = $this->workerLogPath($videoId);
+        if (!is_file($path)) {
+            return null;
+        }
+        $contents = trim((string)@file_get_contents($path));
+        if ($contents === '') {
+            return null;
+        }
+        return substr($contents, -2000);
+    }
+
+    /**
+     * Write to the activity log shown on the superadmin Logs page.
+     */
+    private function log($type, array $data) {
+        try {
+            if ($this->sysLog === null) {
+                require_once __DIR__ . '/SystemLog.php';
+                $this->sysLog = new SystemLog($this->groupId);
             }
-            
-            $cmd = "{$phpPath} \"{$workerScript}\" {$videoId} > /dev/null 2>&1 &";
-            exec($cmd);
-            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Linux command executed: {$cmd}\n", FILE_APPEND);
+            $this->sysLog->log($type, $data);
+        } catch (Exception $e) {
+            error_log('Playlist: failed to write activity log (' . $type . '): ' . $e->getMessage());
         }
     }
 
@@ -262,10 +522,18 @@ class Playlist {
         return ['success' => true];
     }
 
+    /**
+     * Mark a download as finished and clear any previous failure.
+     * Cross-group on purpose: the file is on disk, so every queue entry for this
+     * video can play it locally.
+     */
     public function markDownloadComplete($videoId, $localPath) {
-        $sql = "UPDATE `playlist` SET downloading = 0, local_path = ? WHERE group_id = ? AND video_id = ?";
-        $success = $this->db->query($sql, [$localPath, $this->groupId, $videoId]);
-        
+        $sql = "UPDATE `playlist` SET downloading = 0, download_failed = 0, download_error = NULL, local_path = ? WHERE video_id = ?";
+        $success = $this->db->query($sql, [$localPath, $videoId]);
+
+        @unlink($this->progressFilePath($videoId));
+        @unlink($this->workerLogPath($videoId));
+
         if ($success) {
             return ['success' => true];
         } else {

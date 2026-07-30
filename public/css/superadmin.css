@@ -272,6 +272,64 @@ body {
     margin-top: 20px;
 }
 
+/* System Informations modal */
+.system-info {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.system-info .info-loading {
+    color: #888;
+    text-align: center;
+    padding: 20px 0;
+}
+.info-group {
+    margin-bottom: 18px;
+}
+.info-group h3 {
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--secondary-color);
+}
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 15px;
+    padding: 6px 0;
+    border-bottom: 1px solid #222;
+}
+.info-row:last-child {
+    border-bottom: none;
+}
+.info-label {
+    color: #888;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+.info-value {
+    font-family: monospace;
+    font-size: 0.85rem;
+    text-align: right;
+    word-break: break-all;
+}
+.info-value.ok {
+    color: var(--secondary-color);
+}
+.info-value.bad {
+    color: var(--error-color);
+}
+.info-notice {
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    color: #b0a06a;
+    word-break: break-word;
+}
+.info-notice.bad {
+    color: var(--error-color);
+}
+
 /* Bell Notification Styles */
 .bell-container {
     position: fixed;
@@ -352,6 +410,14 @@ body {
 .dropdown-content a:hover {
     background-color: #333;
     color: var(--primary-color);
+}
+/* Opens the System Informations modal rather than navigating, so it carries an
+   icon to set it apart from the navigation links above it. */
+.dropdown-content a.dropdown-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid #333;
 }
 .dropdown:hover .dropdown-content {
     display: block;

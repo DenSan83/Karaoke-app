@@ -386,7 +386,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 badge.title = 'Downloading...';
                 badge.classList.add('status-badge');
                 infoDiv.appendChild(badge);
-            } else if (video.local_file) {
+            } else if (video.download_failed) {
+                const badge = document.createElement('span');
+                badge.textContent = ' ❌';
+                badge.title = video.download_error
+                    ? `Download failed: ${video.download_error}`
+                    : 'Download failed';
+                badge.classList.add('status-badge', 'failed-badge');
+                infoDiv.appendChild(badge);
+            } else if (video.local_path) {
                 const badge = document.createElement('span');
                 badge.textContent = ' 💾';
                 badge.title = 'Saved locally';
@@ -437,6 +445,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             actionsDiv.appendChild(localPlayBtn);
 
+            if (video.download_failed) {
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'icon-btn retry-icon';
+                retryBtn.textContent = '↻';
+                retryBtn.title = 'Retry download';
+                if (reorderMode) {
+                    retryBtn.disabled = true;
+                } else {
+                    retryBtn.onclick = () => retryDownload(video.id);
+                }
+                actionsDiv.appendChild(retryBtn);
+            }
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'icon-btn remove-icon';
             removeBtn.textContent = '🗑';
@@ -480,6 +501,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     showMessage('Failed to remove video', 'error');
                 }
+            });
+    }
+
+    function retryDownload(videoId) {
+        const apiUrl = (typeof BASE_PATH !== 'undefined' ? BASE_PATH + '/' : '') + 'api/retry_download';
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoId: videoId })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.already_downloaded ? 'Already downloaded' : 'Download restarted', 'success');
+                } else {
+                    showMessage(data.error || 'Could not restart the download', 'error');
+                }
+                fetchPlaylist();
+            })
+            .catch(error => {
+                console.error('Retry error:', error);
+                showMessage('Could not restart the download', 'error');
             });
     }
 

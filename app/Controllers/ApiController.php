@@ -241,6 +241,29 @@ class ApiController {
         }
     }
 
+    public function retryDownload() {
+        if (!$this->checkAuth()) return;
+        header('Content-Type: application/json');
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $videoId = $data['videoId'] ?? null;
+
+        if (!$videoId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'videoId is required']);
+            return;
+        }
+
+        $result = $this->playlistModel->retryDownload($videoId);
+
+        if (isset($result['error'])) {
+            http_response_code(400);
+            echo json_encode($result);
+        } else {
+            echo json_encode($result);
+        }
+    }
+
     public function getProgress() {
         header('Content-Type: application/json');
         $videoId = $_GET['id'] ?? null;

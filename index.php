@@ -261,6 +261,11 @@ switch ($route) {
         $controller->accessKeys();
         break;
 
+    case 'superadmin/system_info':
+        $controller = new SuperAdminController();
+        $controller->systemInfo();
+        break;
+
     case 'superadmin/logs':
         $controller = new SuperAdminController();
         $controller->logs();
@@ -485,6 +490,10 @@ switch ($route) {
     case 'api/download_progress':
         $controller = new ApiController();
         $controller->getProgress();
+        break;
+    case 'api/retry_download':
+        $controller = new ApiController();
+        $controller->retryDownload();
         break;
     case 'api/update_status':
         $controller = new ApiController();

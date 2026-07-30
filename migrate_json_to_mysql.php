@@ -77,6 +77,8 @@ function runMigration() {
             user VARCHAR(255) NOT NULL,
             added_at INT NOT NULL,
             downloading BOOLEAN DEFAULT FALSE,
+            download_failed TINYINT(1) NOT NULL DEFAULT 0,
+            download_error VARCHAR(255) NULL,
             local_path VARCHAR(255) NULL,
             sort_order INT DEFAULT 0,
             INDEX (group_id),
@@ -144,6 +146,11 @@ function runMigration() {
             // Special handling for schema updates on client_connections
             if ($name === 'client_connections') {
                 updateClientConnectionsSchema($pdo, $isCli);
+            }
+
+            // Special handling for schema updates on playlist
+            if ($name === 'playlist') {
+                updatePlaylistSchema($pdo, $isCli);
             }
         } catch (Exception $e) {
             $msg = "Error creating table '$name': " . $e->getMessage();
@@ -237,6 +244,22 @@ function runMigration() {
 
     if ($isCli) echo "Migration finished.\n";
     return true;
+}
+
+function updatePlaylistSchema($pdo, $isCli) {
+    // Failure state for background downloads. Without it a worker that dies leaves
+    // downloading = 1 forever and the admin queue shows an eternal hourglass.
+    $stmt = $pdo->query("SHOW COLUMNS FROM `playlist` LIKE 'download_failed'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'download_failed' column to 'playlist'...\n";
+        $pdo->exec("ALTER TABLE `playlist` ADD COLUMN download_failed TINYINT(1) NOT NULL DEFAULT 0 AFTER downloading");
+    }
+
+    $stmt = $pdo->query("SHOW COLUMNS FROM `playlist` LIKE 'download_error'");
+    if ($stmt->rowCount() === 0) {
+        if ($isCli) echo "  Adding 'download_error' column to 'playlist'...\n";
+        $pdo->exec("ALTER TABLE `playlist` ADD COLUMN download_error VARCHAR(255) NULL AFTER download_failed");
+    }
 }
 
 function updateClientConnectionsSchema($pdo, $isCli) {
