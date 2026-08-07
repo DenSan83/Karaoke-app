@@ -76,7 +76,14 @@ function renderFullPlaylist(playlist, currentIndex) {
     }
 
     let html = '';
+    // Guest sees: CURRENT track, and MAXIMUM 4 more BEFORE that one.
+    // Plus all tracks AFTER the current one.
+    const startIndex = Math.max(0, currentIndex - 4);
+
     playlist.forEach((song, index) => {
+        // Skip songs that are more than 4 positions before the current one
+        if (index < startIndex) return;
+
         const isSinging = index === currentIndex;
         const itemClass = isSinging ? 'full-playlist-item current-singing' : 'full-playlist-item';
         
