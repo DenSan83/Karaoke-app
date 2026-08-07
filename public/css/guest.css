@@ -261,6 +261,53 @@
     background: rgba(207, 102, 121, 0.2);
 }
 
+/* Tab Styles (Bootstrap-like) */
+.tabs-container {
+    margin-bottom: 20px;
+}
+
+.nav-tabs {
+    border-bottom: 1px solid #444;
+    display: flex;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.nav-item {
+    margin-bottom: -1px;
+}
+
+.nav-link {
+    display: block;
+    padding: 10px 20px;
+    border: 2px solid transparent;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    color: #888;
+    text-decoration: none;
+    background: transparent;
+    font-size: 1.2rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    border-color: #444 #444 #444;
+    color: #bbb;
+}
+
+.nav-link.active {
+    color: var(--primary-color);
+    background-color: transparent;
+    border-color: #888 #888 #1e1e1e;
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease;
+}
+
 /* My Queue Styles */
 .my-queue-header {
     margin-bottom: 15px;

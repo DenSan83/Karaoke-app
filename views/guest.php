@@ -60,57 +60,66 @@
         </section>
 
         <section class="my-queue">
-            <div class="my-queue-header">
-                <h2 id="queue-title">My Requests</h2>
-                <button id="toggle-full-playlist" class="toggle-list-btn">See complete list</button>
+            <div class="tabs-container">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="my-requests-tab" data-tab="my-requests" type="button" role="tab">My Requests</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="full-playlist-tab" data-tab="full-playlist" type="button" role="tab">See complete list</button>
+                    </li>
+                </ul>
             </div>
-            <div id="my-requests-section">
-                <ul id="guest-songs">
-                    <?php if (empty($guest['songs'])): ?>
-                        <li class="empty-queue-msg">
-                            You haven't requested any songs yet.<br>
-                            <small>Add a YouTube URL above to join the fun!</small>
-                        </li>
-                    <?php else: ?>
-                        <?php 
-                        // Show latest first
-                        $songs = array_reverse($guest['songs']);
-                        foreach ($songs as $song): 
-                        ?>
-                            <li class="song-item">
-                                <img src="https://img.youtube.com/vi/<?php echo htmlspecialchars($song['id'] ?? ''); ?>/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
-                                <div class="video-info">
-                                    <div class="video-title"><?php echo htmlspecialchars($song['title'] ?? 'Song Request'); ?></div>
-                                    <div class="video-id"><?php echo htmlspecialchars($song['id'] ?? ''); ?></div>
-                                </div>
-                                <?php 
-                                    $displayStatus = isset($calculateStatus) 
-                                        ? $calculateStatus($song['id'], $song['status'] ?? 'Waiting') 
-                                        : ($song['status'] ?? 'Waiting'); 
-                                    
-                                    $statusClass = strtolower($song['status'] ?? 'waiting');
-                                    if ($displayStatus === 'Singing now') $statusClass .= ' singing-now';
-                                    elseif ($displayStatus === 'Coming up') $statusClass .= ' coming-up';
-                                    elseif (strpos($displayStatus, 'songs left') !== false) $statusClass .= ' songs-left';
-                                    elseif ($displayStatus === 'Done') $statusClass = 'done'; // Override status class for Done
-                                ?>
-                                <div class="song-status <?php echo $statusClass; ?>">
-                                    <?php echo htmlspecialchars($displayStatus); ?>
-                                </div>
-                                <button class="remove-song-btn" onclick="confirmRemoveSong(this, '<?php echo $song['id']; ?>', '<?php echo addslashes($song['title']); ?>')" title="Remove Song" <?php echo ($displayStatus === 'Singing now' || $displayStatus === 'Done') ? 'disabled' : ''; ?>>
-                                    <span class="btn-text">×</span>
-                                    <span class="btn-spinner" style="display: none;">⌛</span>
-                                </button>
+            
+            <div class="tab-content">
+                <div id="my-requests-section" class="tab-pane active">
+                    <ul id="guest-songs">
+                        <?php if (empty($guest['songs'])): ?>
+                            <li class="empty-queue-msg">
+                                You haven't requested any songs yet.<br>
+                                <small>Add a YouTube URL above to join the fun!</small>
                             </li>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </ul>
-            </div>
+                        <?php else: ?>
+                            <?php 
+                            // Show latest first
+                            $songs = array_reverse($guest['songs']);
+                            foreach ($songs as $song): 
+                            ?>
+                                <li class="song-item">
+                                    <img src="https://img.youtube.com/vi/<?php echo htmlspecialchars($song['id'] ?? ''); ?>/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
+                                    <div class="video-info">
+                                        <div class="video-title"><?php echo htmlspecialchars($song['title'] ?? 'Song Request'); ?></div>
+                                        <div class="video-id"><?php echo htmlspecialchars($song['id'] ?? ''); ?></div>
+                                    </div>
+                                    <?php 
+                                        $displayStatus = isset($calculateStatus) 
+                                            ? $calculateStatus($song['id'], $song['status'] ?? 'Waiting') 
+                                            : ($song['status'] ?? 'Waiting'); 
+                                        
+                                        $statusClass = strtolower($song['status'] ?? 'waiting');
+                                        if ($displayStatus === 'Singing now') $statusClass .= ' singing-now';
+                                        elseif ($displayStatus === 'Coming up') $statusClass .= ' coming-up';
+                                        elseif (strpos($displayStatus, 'songs left') !== false) $statusClass .= ' songs-left';
+                                        elseif ($displayStatus === 'Done') $statusClass = 'done'; // Override status class for Done
+                                    ?>
+                                    <div class="song-status <?php echo $statusClass; ?>">
+                                        <?php echo htmlspecialchars($displayStatus); ?>
+                                    </div>
+                                    <button class="remove-song-btn" onclick="confirmRemoveSong(this, '<?php echo $song['id']; ?>', '<?php echo addslashes($song['title']); ?>')" title="Remove Song" <?php echo ($displayStatus === 'Singing now' || $displayStatus === 'Done') ? 'disabled' : ''; ?>>
+                                        <span class="btn-text">×</span>
+                                        <span class="btn-spinner" style="display: none;">⌛</span>
+                                    </button>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </ul>
+                </div>
 
-            <div id="full-playlist-section" style="display: none; border-top: 1px solid transparent; padding-top: 10px;">
-                <ul id="full-playlist-songs" class="full-playlist-list">
-                    <!-- Populated via JS -->
-                </ul>
+                <div id="full-playlist-section" class="tab-pane" style="display: none;">
+                    <ul id="full-playlist-songs" class="full-playlist-list">
+                        <!-- Populated via JS -->
+                    </ul>
+                </div>
             </div>
         </section>
     </div>

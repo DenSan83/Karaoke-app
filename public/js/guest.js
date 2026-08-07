@@ -9,30 +9,49 @@ const socialNotifOk = document.getElementById('social-notif-ok');
 const requestBtn = document.getElementById('request-btn');
 const urlInput = document.getElementById('song-url');
 const msgDiv = document.getElementById('request-msg');
+// Tab Elements
+const tabs = document.querySelectorAll('.nav-link[data-tab]');
+const tabPanes = document.querySelectorAll('.tab-pane');
 const songList = document.getElementById('guest-songs');
 const myRequestsSection = document.getElementById('my-requests-section');
-const queueTitle = document.getElementById('queue-title');
-const toggleFullPlaylistBtn = document.getElementById('toggle-full-playlist');
 const fullPlaylistSection = document.getElementById('full-playlist-section');
 const fullPlaylistSongs = document.getElementById('full-playlist-songs');
 
 let fullPlaylistVisible = false;
 
-if (toggleFullPlaylistBtn) {
-    toggleFullPlaylistBtn.addEventListener('click', () => {
-        fullPlaylistVisible = !fullPlaylistVisible;
-        if (fullPlaylistVisible) {
-            if (myRequestsSection) myRequestsSection.style.display = 'none';
-            fullPlaylistSection.style.display = 'block';
-            toggleFullPlaylistBtn.textContent = 'Hide complete list';
-            if (queueTitle) queueTitle.textContent = 'Full Playlist';
-            fetchFullPlaylist();
-        } else {
-            if (myRequestsSection) myRequestsSection.style.display = 'block';
-            fullPlaylistSection.style.display = 'none';
-            toggleFullPlaylistBtn.textContent = 'See complete list';
-            if (queueTitle) queueTitle.textContent = 'My Requests';
-        }
+if (tabs.length > 0) {
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.getAttribute('data-tab');
+            
+            // Update tab buttons
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Update tab panes
+            if (targetTab === 'full-playlist') {
+                fullPlaylistVisible = true;
+                if (myRequestsSection) {
+                    myRequestsSection.style.display = 'none';
+                    myRequestsSection.classList.remove('active');
+                }
+                if (fullPlaylistSection) {
+                    fullPlaylistSection.style.display = 'block';
+                    fullPlaylistSection.classList.add('active');
+                }
+                fetchFullPlaylist();
+            } else {
+                fullPlaylistVisible = false;
+                if (myRequestsSection) {
+                    myRequestsSection.style.display = 'block';
+                    myRequestsSection.classList.add('active');
+                }
+                if (fullPlaylistSection) {
+                    fullPlaylistSection.style.display = 'none';
+                    fullPlaylistSection.classList.remove('active');
+                }
+            }
+        });
     });
 }
 
@@ -291,11 +310,11 @@ urlInput.addEventListener('keypress', (e) => {
 function renderSongs() {
     if (!window.guestSongs) return;
 
-    const songList = document.getElementById('guest-songs');
-    if (!songList) return;
+    const songListContainer = document.getElementById('guest-songs');
+    if (!songListContainer) return;
 
     if (window.guestSongs.length === 0) {
-        songList.innerHTML = `
+        songListContainer.innerHTML = `
             <li class="empty-queue-msg">
                 You haven't requested any songs yet.<br>
                 <small>Add a YouTube URL above to join the fun!</small>
@@ -306,10 +325,6 @@ function renderSongs() {
 
     // Show latest first
     const reversedSongs = [...window.guestSongs].reverse();
-    
-    // We want to avoid flickering, so we'll compare and only update if needed 
-    // but for simplicity and given the frequency, a full render might be okay.
-    // However, let's at least keep it relatively efficient.
     
     let html = '';
     reversedSongs.forEach((song) => {
@@ -342,7 +357,7 @@ function renderSongs() {
             </li>
         `;
     });
-    songList.innerHTML = html;
+    songListContainer.innerHTML = html;
 }
 
 function showCollisionModal(singerName, singerId, videoId) {
@@ -497,9 +512,9 @@ async function confirmRemoveSong(btn, videoId, title) {
                             window.guestSongs = window.guestSongs.filter(s => s.id !== videoId);
                         }
                         // If queue is empty, show the empty message
-                        const songList = document.getElementById('guest-songs');
-                        if (songList && songList.children.length === 0) {
-                            songList.innerHTML = `
+                        const songListContainerInner = document.getElementById('guest-songs');
+                        if (songListContainerInner && songListContainerInner.children.length === 0) {
+                            songListContainerInner.innerHTML = `
                                 <li class="empty-queue-msg">
                                     You haven't requested any songs yet.<br>
                                     <small>Add a YouTube URL above to join the fun!</small>
