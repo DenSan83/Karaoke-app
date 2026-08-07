@@ -56,6 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         step1.classList.remove('active');
                         step2.classList.add('active');
+                        
+                        // Add background to card for step 2
+                        const welcomeCard = document.querySelector('.welcome-card');
+                        if (welcomeCard) welcomeCard.classList.add('step-2-active');
+                        
                         nameInput.focus();
                     }
                 } else {
