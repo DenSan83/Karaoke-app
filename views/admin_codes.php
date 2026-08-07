@@ -38,6 +38,9 @@
                         <!-- Loading spinner -->
                         <div id="qr-spinner" class="qr-spinner"></div>
                     </div>
+                    <div id="qrcode-placeholder" class="qrcode-placeholder hidden">
+                        <p>Please save the code to display the QR</p>
+                    </div>
                     <p class="qrcode-hint">Scan to join the party automatically</p>
                 </div>
 

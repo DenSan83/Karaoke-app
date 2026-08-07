@@ -1,9 +1,12 @@
 let initialCode = '';
+let qrGenerationTimeout = null;
 
 function updateQRCode() {
     const section = document.getElementById('qrcode-section');
     const container = document.getElementById('qrcode');
     const input = document.getElementById('guest-code');
+    const qrPlaceholder = document.getElementById('qrcode-placeholder');
+    const qrHint = document.querySelector('.qrcode-hint');
     if (!section || !container || !input) return;
 
     const code = input.value.trim();
@@ -14,6 +17,16 @@ function updateQRCode() {
     }
 
     section.classList.remove('hidden');
+
+    // Ensure QR is visible and placeholder is hidden when updating
+    container.classList.remove('hidden');
+    if (qrPlaceholder) qrPlaceholder.classList.add('hidden');
+    if (qrHint) qrHint.classList.remove('hidden');
+
+    // Cancel any pending generation
+    if (qrGenerationTimeout) {
+        clearTimeout(qrGenerationTimeout);
+    }
 
     // Create base URL (strip /admin/codes)
     let baseUrl = window.location.origin + window.location.pathname.split('/admin')[0];
@@ -26,21 +39,26 @@ function updateQRCode() {
     console.log("Generating QR for:", joinUrl);
 
     try {
-        const spinner = document.getElementById('qr-spinner');
-        if (spinner) spinner.classList.remove('hidden');
-
-        // Clear only the generated QR (img and canvas), but keep the spinner if it exists
-        const oldImg = container.querySelector('img');
-        const oldCanvas = container.querySelector('canvas');
-        if (oldImg) oldImg.remove();
-        if (oldCanvas) oldCanvas.remove();
+        // Clear the container completely before generating new QR
+        container.innerHTML = '';
+        
+        // Re-add the spinner
+        const newSpinner = document.createElement('div');
+        newSpinner.id = 'qr-spinner';
+        newSpinner.className = 'qr-spinner';
+        container.appendChild(newSpinner);
         
         // Use a slight delay to ensure the DOM is ready and library is definitely loaded
-        setTimeout(() => {
+        qrGenerationTimeout = setTimeout(() => {
             if (typeof QRCode === 'undefined') {
                 console.error("QRCode library not loaded");
                 return;
             }
+            
+            // Double check container is still empty (except for spinner) to avoid duplicates from race conditions
+            // We clear it again just in case another call slipped through
+            const elements = container.querySelectorAll('canvas, img');
+            elements.forEach(el => el.remove());
             
             // Set fixed size for generation to ensure library has enough space
             const size = 256;
@@ -58,16 +76,26 @@ function updateQRCode() {
             // We'll check periodically for a few times
             let attempts = 0;
             const checkImg = setInterval(() => {
+                const imgs = container.querySelectorAll('img');
+                const canvases = container.querySelectorAll('canvas');
+                
+                // If we somehow got multiple, keep only the latest ones
+                if (imgs.length > 1 || canvases.length > 1) {
+                    for (let i = 0; i < imgs.length - 1; i++) imgs[i].remove();
+                    for (let i = 0; i < canvases.length - 1; i++) canvases[i].remove();
+                }
+
                 const img = container.querySelector('img');
                 const canvas = container.querySelector('canvas');
                 
-                if (img && img.src && img.src !== location.href) {
+                if (img && img.src && img.src !== location.href && img.src.startsWith('data:image')) {
                     // Success!
                     img.style.display = 'block';
                     img.style.margin = '0 auto';
                     img.style.maxWidth = '100%';
                     img.style.height = 'auto';
                     if (canvas) canvas.style.display = 'none';
+                    const spinner = container.querySelector('#qr-spinner');
                     if (spinner) spinner.classList.add('hidden');
                     
                     // On some mobile browsers, the image might need an explicit trigger to redraw
@@ -85,6 +113,7 @@ function updateQRCode() {
                         canvas.style.background = '#fff';
                         canvas.style.padding = '5px';
                     }
+                    const spinner = container.querySelector('#qr-spinner');
                     if (spinner) spinner.classList.add('hidden');
                     clearInterval(checkImg);
                 }
@@ -99,10 +128,31 @@ function updateQRCode() {
 function checkChanges() {
     const saveBtn = document.getElementById('save-btn');
     const input = document.getElementById('guest-code');
+    const qrWrapper = document.getElementById('qrcode');
+    const qrPlaceholder = document.getElementById('qrcode-placeholder');
+    const qrHint = document.querySelector('.qrcode-hint');
+
     if (!saveBtn || !input) return;
 
     const hasChanges = input.value.trim() !== initialCode;
     saveBtn.disabled = !hasChanges;
+
+    // Toggle QR visibility based on changes
+    if (hasChanges) {
+        if (qrWrapper) qrWrapper.classList.add('hidden');
+        if (qrPlaceholder) qrPlaceholder.classList.remove('hidden');
+        if (qrHint) qrHint.classList.add('hidden');
+    } else {
+        if (qrWrapper) qrWrapper.classList.remove('hidden');
+        if (qrPlaceholder) qrPlaceholder.classList.add('hidden');
+        if (qrHint) qrHint.classList.remove('hidden');
+        
+        // Re-generate if we're back to initial code but it wasn't displayed
+        if (input.value.trim() !== '') {
+            // Only update if not already there or if we just toggled back
+            updateQRCode();
+        }
+    }
 }
 
 // Escape helper
@@ -123,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initialCode = guestCodeInput.value.trim();
         guestCodeInput.addEventListener('input', () => {
             checkChanges();
-            updateQRCode();
         });
     }
 
@@ -184,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Update initial state after successful save
                     initialCode = code;
+                    updateQRCode(); // Update QR with the new saved code
                 } else {
                     msg.textContent = data.error || 'Failed to save code';
                     msg.className = 'msg error';
@@ -244,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Trigger events
                 checkChanges();
-                updateQRCode();
                 
                 generateBtn.innerHTML = originalContent;
             } catch (e) {

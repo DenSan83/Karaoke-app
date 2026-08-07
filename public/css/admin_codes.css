@@ -278,6 +278,29 @@
     font-weight: 500;
 }
 
+.qrcode-placeholder {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px dashed #444;
+    min-width: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.qrcode-placeholder p {
+    color: #888;
+    font-style: italic;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.qrcode-placeholder.hidden {
+    display: none !important;
+}
+
 /* Session Master Toggle */
 .session-master-toggle {
     background: var(--card-bg);
