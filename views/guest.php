@@ -77,7 +77,7 @@
                         <?php if (empty($guest['songs'])): ?>
                             <li class="empty-queue-msg">
                                 You haven't requested any songs yet.<br>
-                                <small>Add a YouTube URL above to join the fun!</small>
+                                Add a YouTube URL above to join the fun!
                             </li>
                         <?php else: ?>
                             <?php 

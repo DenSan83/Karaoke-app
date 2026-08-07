@@ -317,7 +317,7 @@ function renderSongs() {
         songListContainer.innerHTML = `
             <li class="empty-queue-msg">
                 You haven't requested any songs yet.<br>
-                <small>Add a YouTube URL above to join the fun!</small>
+                Add a YouTube URL above to join the fun!
             </li>
         `;
         return;
@@ -517,7 +517,7 @@ async function confirmRemoveSong(btn, videoId, title) {
                             songListContainerInner.innerHTML = `
                                 <li class="empty-queue-msg">
                                     You haven't requested any songs yet.<br>
-                                    <small>Add a YouTube URL above to join the fun!</small>
+                                    Add a YouTube URL above to join the fun!
                                 </li>
                             `;
                         }
