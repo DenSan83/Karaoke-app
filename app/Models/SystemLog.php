@@ -50,6 +50,14 @@ class SystemLog {
     }
 
     /**
+     * Remove a single log by ID
+     */
+    public function removeLog($logId) {
+        $sql = "DELETE FROM `activity_logs` WHERE id = ?";
+        return $this->db->query($sql, [$logId]);
+    }
+
+    /**
      * Remove all logs associated with a specific guest ID
      */
     public function removeLogsByGuestId($guestId) {

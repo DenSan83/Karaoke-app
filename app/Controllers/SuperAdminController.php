@@ -140,6 +140,17 @@ class SuperAdminController {
         exit;
     }
 
+    public function deleteLog() {
+        $logId = $_POST['log_id'] ?? null;
+        if ($logId) {
+            require_once 'app/Models/SystemLog.php';
+            $sysLog = new SystemLog('system');
+            $sysLog->removeLog($logId);
+        }
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'superadmin/logs'));
+        exit;
+    }
+
     public function clients() {
         global $basePath;
         require_once 'app/Models/ClientLog.php';

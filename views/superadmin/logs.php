@@ -151,12 +151,13 @@
                             <th>Party ID</th>
                             <th>Type</th>
                             <th>Data</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($logs)): ?>
                             <tr>
-                                <td colspan="4" style="text-align: center; padding: 40px; color: #888;">No logs found.</td>
+                                <td colspan="5" style="text-align: center; padding: 40px; color: #888;">No logs found.</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($logs as $log): ?>
@@ -177,6 +178,12 @@
                                             $data = json_decode($log['data'], true);
                                             echo htmlspecialchars(json_encode($data, JSON_PRETTY_PRINT)); 
                                         ?></pre>
+                                    </td>
+                                    <td>
+                                        <form action="superadmin/delete_log" method="POST" onsubmit="return confirm('Delete this log entry?');">
+                                            <input type="hidden" name="log_id" value="<?= $log['id'] ?>">
+                                            <button type="submit" class="action-btn" title="Delete entry">🗑️</button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

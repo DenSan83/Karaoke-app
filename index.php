@@ -310,6 +310,11 @@ switch ($route) {
         $controller->deleteVisitLog();
         break;
 
+    case 'superadmin/delete_log':
+        $controller = new SuperAdminController();
+        $controller->deleteLog();
+        break;
+
     case 'superadmin/ban_client':
         $controller = new SuperAdminController();
         $controller->banClient();
