@@ -126,6 +126,7 @@ class WelcomeController {
             'guest' => $guest,
             'partyName' => $partyName,
             'calculateStatus' => $calculateStatus,
+            'status' => $status,
             'basePath' => $this->basePath
         ];
         extract($data);
@@ -772,6 +773,8 @@ class WelcomeController {
         $playlist = json_decode($playlistModel->getAll(), true) ?? [];
         $status = $statusModel->get();
         $currentIndex = $status['current_index'] ?? -1;
+        $playerState = $status['state'] ?? 'paused';
+        $isActuallyPlaying = ($playerState === 'playing');
 
         $futureIndices = [];
         $currentVideoId = null;
@@ -810,11 +813,14 @@ class WelcomeController {
                 $displayStatus = $baseStatus;
             }
             $song['display_status'] = $displayStatus;
+            $song['is_playing'] = ($displayStatus === 'Singing now' && $isActuallyPlaying);
         }
 
         echo json_encode([
             'songs' => $guest['songs'],
-            'notifications' => $guest['notifications'] ?? []
+            'notifications' => $guest['notifications'] ?? [],
+            'player_state' => $playerState,
+            'current_index' => $currentIndex
         ], JSON_UNESCAPED_UNICODE);
     }
 

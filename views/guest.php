@@ -98,11 +98,6 @@
                             foreach ($songs as $song): 
                             ?>
                                 <li class="song-item">
-                                    <img src="https://img.youtube.com/vi/<?php echo htmlspecialchars($song['id'] ?? ''); ?>/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
-                                    <div class="video-info">
-                                        <div class="video-title"><?php echo htmlspecialchars($song['title'] ?? 'Song Request'); ?></div>
-                                        <div class="video-id"><?php echo htmlspecialchars($song['id'] ?? ''); ?></div>
-                                    </div>
                                     <?php 
                                         $displayStatus = isset($calculateStatus) 
                                             ? $calculateStatus($song['id'], $song['status'] ?? 'Waiting') 
@@ -114,6 +109,28 @@
                                         elseif (strpos($displayStatus, 'songs left') !== false) $statusClass .= ' songs-left';
                                         elseif ($displayStatus === 'Done') $statusClass = 'done'; // Override status class for Done
                                     ?>
+                                    <div class="thumbnail-container">
+                                        <img src="https://img.youtube.com/vi/<?php echo htmlspecialchars($song['id'] ?? ''); ?>/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
+                                        <?php 
+                                            // Check if playing based on player status
+                                            $isPlaying = false;
+                                            if ($displayStatus === 'Singing now' && isset($status['state']) && $status['state'] === 'playing') {
+                                                $isPlaying = true;
+                                            }
+                                        ?>
+                                        <?php if ($isPlaying): ?>
+                                            <div class="equalizer-overlay">
+                                                <div class="bar"></div>
+                                                <div class="bar"></div>
+                                                <div class="bar"></div>
+                                                <div class="bar"></div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="video-info">
+                                        <div class="video-title"><?php echo htmlspecialchars($song['title'] ?? 'Song Request'); ?></div>
+                                        <div class="video-id"><?php echo htmlspecialchars($song['id'] ?? ''); ?></div>
+                                    </div>
                                     <div class="song-status <?php echo $statusClass; ?>">
                                         <?php echo htmlspecialchars($displayStatus); ?>
                                     </div>

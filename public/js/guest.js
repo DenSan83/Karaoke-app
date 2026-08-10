@@ -70,19 +70,26 @@ if (tabs.length > 0) {
     });
 }
 
+let lastPlaylistData = null;
+
 async function fetchFullPlaylist() {
     try {
         const response = await fetch('api/get_playlist');
         const playlist = await response.json();
         const statusResponse = await fetch('api/get_status');
         const status = await statusResponse.json();
-        renderFullPlaylist(playlist, status.current_index);
+        
+        const currentData = JSON.stringify({ playlist, status });
+        if (lastPlaylistData === currentData) return;
+        lastPlaylistData = currentData;
+
+        renderFullPlaylist(playlist, status);
     } catch (e) {
         console.error("Failed to fetch full playlist:", e);
     }
 }
 
-function renderFullPlaylist(playlist, currentIndex) {
+function renderFullPlaylist(playlist, status) {
     if (!fullPlaylistSongs) return;
     
     if (!playlist || playlist.length === 0) {
@@ -93,6 +100,7 @@ function renderFullPlaylist(playlist, currentIndex) {
     let html = '';
     // Guest sees: CURRENT track, and MAXIMUM 4 more BEFORE that one.
     // Plus all tracks AFTER the current one.
+    const currentIndex = status.current_index;
     const startIndex = Math.max(0, currentIndex - 4);
 
     playlist.forEach((song, index) => {
@@ -100,14 +108,29 @@ function renderFullPlaylist(playlist, currentIndex) {
         if (index < startIndex) return;
 
         const isSinging = index === currentIndex;
+        const playerState = status.state || 'paused';
+        const isActuallyPlaying = isSinging && playerState === 'playing';
+        
         const itemClass = isSinging ? 'full-playlist-item current-singing' : 'full-playlist-item';
         
         const isMySong = song.user === window.currentGuestName || (song.user && song.user.includes(`(added by ${window.currentGuestName})`));
         const userDisplay = isMySong ? 'Requested by: <span class="highlight-you">YOU</span>' : `Requested by: ${song.user}`;
         
+        const equalizerHtml = isActuallyPlaying ? `
+            <div class="equalizer-overlay">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+        ` : '';
+
         html += `
             <li class="${itemClass}">
-                <img src="https://img.youtube.com/vi/${song.id}/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
+                <div class="thumbnail-container">
+                    <img src="https://img.youtube.com/vi/${song.id}/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
+                    ${equalizerHtml}
+                </div>
                 <div class="video-info">
                     <div class="video-title">${song.title}</div>
                     <div class="video-user">${userDisplay}</div>
@@ -324,7 +347,10 @@ async function addConfirmedSong(url) {
             setTimeout(() => {
                 msgDiv.textContent = "";
                 msgDiv.className = 'request-status-msg';
-                window.location.reload();
+                // Reset lastDashboardData to force re-render on next poll
+                lastDashboardData = null;
+                lastPlaylistData = null;
+                fetchDashboardData();
             }, 1000);
         } else {
             msgDiv.textContent = data.error || "Failed to add song";
@@ -371,6 +397,7 @@ function renderSongs() {
     reversedSongs.forEach((song) => {
         const baseStatus = song.status || 'Waiting';
         const displayStatus = song.display_status || baseStatus;
+        const isActuallyPlaying = !!song.is_playing;
         
         let statusClass = baseStatus.toLowerCase();
         if (displayStatus === 'Singing now') statusClass += ' singing-now';
@@ -381,9 +408,21 @@ function renderSongs() {
         const isSinging = displayStatus === 'Singing now';
         const isDone = displayStatus === 'Done';
 
+        const equalizerHtml = isActuallyPlaying ? `
+            <div class="equalizer-overlay">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+        ` : '';
+
         html += `
             <li class="song-item">
-                <img src="https://img.youtube.com/vi/${song.id}/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
+                <div class="thumbnail-container">
+                    <img src="https://img.youtube.com/vi/${song.id}/mqdefault.jpg" class="video-thumbnail" alt="thumbnail">
+                    ${equalizerHtml}
+                </div>
                 <div class="video-info">
                     <div class="video-title">${song.title}</div>
                     <div class="video-id">${song.id}</div>
@@ -418,7 +457,11 @@ function showCollisionModal(singerName, singerId, videoId) {
                 body: JSON.stringify({ targetGuestId: singerId, videoId: videoId })
             });
         } catch (e) { console.error("[COLLISION] Join API Error:", e); }
-        window.location.reload();
+        // Reset lastDashboardData to force re-render on next poll
+        lastDashboardData = null;
+        lastPlaylistData = null;
+        fetchDashboardData();
+        collisionModal.classList.remove('active');
     };
 
     collisionNo.onclick = async () => {
@@ -429,7 +472,11 @@ function showCollisionModal(singerName, singerId, videoId) {
                 body: JSON.stringify({ videoId: videoId })
             });
         } catch (e) { console.error("[COLLISION] Remove API Error:", e); }
-        window.location.reload();
+        // Reset lastDashboardData to force re-render on next poll
+        lastDashboardData = null;
+        lastPlaylistData = null;
+        fetchDashboardData();
+        collisionModal.classList.remove('active');
     };
 }
 
@@ -461,6 +508,7 @@ function showKaraokeConfirmModal(title, url, failedWord, filterType) {
 }
 
 let isShowingModal = false;
+let lastDashboardData = null;
 
 async function fetchDashboardData() {
     if (isShowingModal) return;
@@ -469,6 +517,15 @@ async function fetchDashboardData() {
         const response = await fetch('api/guest_dashboard_data');
         const data = await response.json();
         
+        const dataString = JSON.stringify(data);
+        if (lastDashboardData === dataString) {
+            if (fullPlaylistVisible) {
+                fetchFullPlaylist();
+            }
+            return;
+        }
+        lastDashboardData = dataString;
+
         if (data.songs) {
             window.guestSongs = data.songs;
             renderSongs();
@@ -518,7 +575,10 @@ function showSocialModal(notif) {
         if (window.activeNotifications.length > 0) {
             setTimeout(() => checkNotifications(), 300);
         } else {
-            window.location.reload();
+            // Reset lastDashboardData to force re-render on next poll
+            lastDashboardData = null;
+            lastPlaylistData = null;
+            fetchDashboardData();
         }
     };
 }
@@ -548,6 +608,8 @@ async function confirmRemoveSong(btn, videoId, title) {
                     songItem.style.transform = 'translateX(20px)';
                     setTimeout(() => {
                         songItem.remove();
+                        // Reset lastDashboardData to force re-render on next poll
+                        lastDashboardData = null;
                         // Update global array if exists
                         if (window.guestSongs) {
                             window.guestSongs = window.guestSongs.filter(s => s.id !== videoId);
