@@ -387,6 +387,7 @@ body {
     top: 100%;
     left: 0;
     width: 100%;
+    pointer-events: auto; /* Ensure clicks work */
 }
 .dropdown::after {
     content: "";
@@ -419,10 +420,16 @@ body {
     gap: 8px;
     border-top: 1px solid #333;
 }
+.dropdown-content.show {
+    display: block !important;
+}
 .dropdown:hover .dropdown-content {
-    display: block;
+    display: none;
 }
 .dropdown:hover .btn-management {
+    background-color: #333;
+}
+.dropdown.active .btn-management {
     background-color: #444;
 }
 .btn-management {
@@ -432,6 +439,97 @@ body {
     background: #333;
     color: #fff;
     border: 1px solid #444;
+    cursor: pointer;
+    z-index: 1001; /* Ensure button is clickable */
+}
+
+@media (max-width: 768px) {
+    .superadmin-layout {
+        flex-direction: column;
+    }
+
+    .superadmin-layout .sidebar {
+        display: none; /* Hidden by default on mobile */
+        position: fixed !important;
+        top: 60px;
+        bottom: auto;
+        width: 100%;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        min-height: 75px;
+        padding: 10px;
+        flex-direction: column;
+        border-right: none;
+        border-bottom: 1px solid #333;
+        box-sizing: border-box;
+        z-index: 100;
+        background-color: var(--card-bg);
+    }
+
+    .superadmin-layout .sidebar.active {
+        display: flex; /* Show when active */
+    }
+
+    .superadmin-layout .main-content {
+        margin-left: 0;
+        margin-bottom: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .superadmin-layout .sidebar-btn {
+        width: 100% !important;
+        max-width: none !important;
+        height: 50px !important;
+        flex-direction: row !important;
+        padding: 0 15px !important;
+        margin-bottom: 10px;
+    }
+
+    .superadmin-layout .sidebar-btn .btn-text {
+        display: block !important;
+        font-size: 0.9rem !important;
+    }
+
+    .superadmin-layout .sidebar-options-container {
+        margin-top: 0 !important;
+        width: 100% !important;
+        flex-direction: column !important;
+    }
+
+    .superadmin-layout .dropdown {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .superadmin-layout .dropdown-content {
+        position: relative;
+        display: none;
+        box-shadow: none;
+        border: none;
+        border-left: 2px solid var(--primary-color);
+        margin-top: 0;
+        margin-left: 20px;
+        width: calc(100% - 20px);
+        background: transparent;
+    }
+
+    .superadmin-layout .dropdown-content.show {
+        display: block !important;
+    }
+
+    .superadmin-layout .dropdown-content a {
+        padding: 8px 16px;
+    }
+
+    .superadmin-layout .dropdown:hover .btn-management {
+        background-color: #333;
+    }
+    
+    .superadmin-layout .dropdown.active .btn-management {
+        background-color: #333;
+    }
 }
 
 /* Contact Page Specific */

@@ -65,7 +65,11 @@ class SuperAdminController {
         }
 
         $contactEmail = $settings->get('contact_email', 'contact@devdensan.com');
-        $data = ['basePath' => $basePath];
+        $data = [
+            'basePath' => $basePath,
+            'contactEmail' => $contactEmail,
+            'success' => $success ?? null
+        ];
         extract($data);
         require_once 'views/superadmin/contact.php';
     }
@@ -82,7 +86,11 @@ class SuperAdminController {
         }
 
         $accessKeys = $settings->get('access_keys_bank', '');
-        $data = ['basePath' => $basePath];
+        $data = [
+            'basePath' => $basePath,
+            'accessKeys' => $accessKeys,
+            'success' => $success ?? null
+        ];
         extract($data);
         require_once 'views/superadmin/access_keys.php';
     }
@@ -149,7 +157,12 @@ class SuperAdminController {
             $clients = $clientLog->getAllClients();
         }
         
-        $data = ['basePath' => $basePath];
+        $data = [
+            'basePath' => $basePath,
+            'group' => $group,
+            'clients' => $clients,
+            'groupId' => $groupId
+        ];
         extract($data);
         require_once 'views/superadmin/clients.php';
     }

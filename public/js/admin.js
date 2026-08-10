@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hamburgerBtn && navbarControls) {
         hamburgerBtn.addEventListener('click', () => {
             navbarControls.classList.toggle('active');
+            hamburgerBtn.classList.toggle('active');
         });
 
         // Close menu when a control button is clicked on mobile

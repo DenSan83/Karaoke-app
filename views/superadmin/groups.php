@@ -51,7 +51,7 @@
         <div id="bellCounter" class="bell-counter">0</div>
     </div>
     <nav class="navbar">
-        <div class="logo">SuperAdmin Office</div>
+        <div class="logo">SuperAdmin</div>
         <button id="hamburgerBtn" class="hamburger">
             <span></span>
             <span></span>
@@ -59,14 +59,14 @@
         </button>
     </nav>
 
-    <div class="layout">
+    <div class="layout superadmin-layout">
         <aside class="sidebar" id="sidebar">
             <button class="sidebar-btn" onclick="showCreateModal()">
                 <span class="icon">+</span> <span class="btn-text">Create Party</span>
             </button>
             
-            <div class="dropdown" style="width: 100%; margin-top: 10px;">
-                <button class="sidebar-btn btn-management" style="width: 100%; text-align: left;">
+            <div class="dropdown" style="width: 100%; margin-top: 10px;" id="managementDropdown">
+                <button class="sidebar-btn btn-management" style="width: 100%; text-align: left;" onclick="toggleManagement(event)">
                     <span class="icon">
                         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="3"></circle>
@@ -87,7 +87,7 @@
                             <line x1="12" y1="16" x2="12" y2="12"></line>
                             <line x1="12" y1="8" x2="12.01" y2="8"></line>
                         </svg>
-                        Informations
+                        System Informations
                     </a>
                 </div>
             </div>
@@ -273,6 +273,18 @@
     </div>
 
     <script>
+        // Management Dropdown Toggle
+        function toggleManagement(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('managementDropdown');
+            const content = dropdown.querySelector('.dropdown-content');
+            const isShowing = content.classList.contains('show');
+            
+            // Close other dropdowns if any (though there's currently only one)
+            content.classList.toggle('show');
+            dropdown.classList.toggle('active');
+        }
+
         // Hamburger Menu Toggle
         function toggleKebab(event, id) {
             event.stopPropagation();
@@ -290,6 +302,14 @@
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.kebab-menu')) {
                 document.querySelectorAll('.kebab-dropdown').forEach(d => d.classList.remove('show'));
+            }
+            if (!e.target.closest('#managementDropdown')) {
+                const mgmtDropdown = document.getElementById('managementDropdown');
+                if (mgmtDropdown) {
+                    mgmtDropdown.classList.remove('active');
+                    const content = mgmtDropdown.querySelector('.dropdown-content');
+                    if (content) content.classList.remove('show');
+                }
             }
         });
 
