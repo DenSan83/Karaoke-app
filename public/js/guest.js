@@ -113,8 +113,17 @@ function renderFullPlaylist(playlist, status) {
         
         const itemClass = isSinging ? 'full-playlist-item current-singing' : 'full-playlist-item';
         
-        const isMySong = song.user === window.currentGuestName || (song.user && song.user.includes(`(added by ${window.currentGuestName})`));
-        const userDisplay = isMySong ? 'Requested by: <span class="highlight-you">YOU</span>' : `Requested by: ${song.user}`;
+        const isAddedByMe = song.user && song.user.includes(`(added by ${window.currentGuestName})`);
+        const isMyOwnSong = song.user === window.currentGuestName;
+        const isMySong = isMyOwnSong || isAddedByMe;
+        
+        let userDisplay = `Requested by: ${song.user}`;
+        if (isMyOwnSong) {
+            userDisplay = 'Requested by: <span class="highlight-you">YOU</span>';
+        } else if (isAddedByMe) {
+            const friendName = song.user.split(' (added by ')[0];
+            userDisplay = `Requested by: ${friendName} (<span class="highlight-you">YOU</span>)`;
+        }
         
         const equalizerHtml = isActuallyPlaying ? `
             <div class="equalizer-overlay">
