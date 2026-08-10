@@ -303,9 +303,10 @@ class ApiController {
                     foreach ($guest['songs'] as $song) {
                         // Only show Waiting requests
                         if (($song['status'] ?? 'Waiting') === 'Waiting') {
+                            $displayName = $song['requested_by'] ?? $guest['name'];
                             $flattenedRequests[] = [
                                 'guest_id' => $guest['id'],
-                                'guest_name' => $guest['name'],
+                                'guest_name' => $displayName,
                                 'video' => $song,
                                 'timestamp' => $song['added_at'] ?? 0
                             ];

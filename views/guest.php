@@ -45,7 +45,19 @@
         </div>
 
         <section class="search-section">
-            <h3>Request a Song</h3>
+            <div class="search-header">
+                <h3>Request a Song</h3>
+                <label class="toggle-container">
+                    <span class="toggle-label">For a friend</span>
+                    <input type="checkbox" id="for-friend-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div id="friend-name-container" class="friend-name-dropdown" style="display: none;">
+                <input type="text" id="friend-name" class="search-input" placeholder="Friend name" autocomplete="off">
+            </div>
+
             <div class="search-group">
                 <div class="input-wrapper">
                     <input type="text" id="song-url" class="search-input" placeholder="Paste YouTube URL here" autocomplete="off">

@@ -372,6 +372,7 @@ class WelcomeController {
 
         $data = json_decode(file_get_contents('php://input'), true);
         $url = $data['song']['url'] ?? '';
+        $friendName = $data['friendName'] ?? null;
 
         if (empty($url)) {
             http_response_code(400);
@@ -384,7 +385,7 @@ class WelcomeController {
 
         // Check if this is a playlist
         if ($ytService->isPlaylistUrl($url)) {
-            $this->guestAddPlaylist($url, $ytService);
+            $this->guestAddPlaylist($url, $ytService, $friendName);
             return;
         }
 
@@ -517,6 +518,11 @@ class WelcomeController {
             'added_at' => time()
         ];
 
+        if ($friendName) {
+            $currentGuestName = $_SESSION['guest_name'] ?? 'Guest';
+            $songData['requested_by'] = "$friendName (added by $currentGuestName)";
+        }
+
         $result = $this->guestModel->addSong($_SESSION['guest_id'], $songData);
         
         if ($result['success']) {
@@ -549,7 +555,7 @@ class WelcomeController {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
     }
 
-    private function guestAddPlaylist($url, $ytService) {
+    private function guestAddPlaylist($url, $ytService, $friendName = null) {
         $playlistId = $ytService->extractPlaylistId($url);
         if (!$playlistId) {
             http_response_code(400);
@@ -579,6 +585,11 @@ class WelcomeController {
                 'title' => $videoData['title'],
                 'added_at' => time()
             ];
+
+            if ($friendName) {
+                $currentGuestName = $_SESSION['guest_name'] ?? 'Guest';
+                $songData['requested_by'] = "$friendName (added by $currentGuestName)";
+            }
 
             $songResult = $this->guestModel->addSong($_SESSION['guest_id'], $songData);
             if (isset($songResult['success'])) {

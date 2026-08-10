@@ -9,6 +9,21 @@ const socialNotifOk = document.getElementById('social-notif-ok');
 const requestBtn = document.getElementById('request-btn');
 const urlInput = document.getElementById('song-url');
 const msgDiv = document.getElementById('request-msg');
+const forFriendToggle = document.getElementById('for-friend-toggle');
+const friendNameContainer = document.getElementById('friend-name-container');
+const friendNameInput = document.getElementById('friend-name');
+
+if (forFriendToggle && friendNameContainer) {
+    forFriendToggle.addEventListener('change', () => {
+        if (forFriendToggle.checked) {
+            friendNameContainer.style.display = 'block';
+            if (friendNameInput) friendNameInput.focus();
+        } else {
+            friendNameContainer.style.display = 'none';
+            if (friendNameInput) friendNameInput.value = '';
+        }
+    });
+}
 // Tab Elements
 const tabs = document.querySelectorAll('.nav-link[data-tab]');
 const tabPanes = document.querySelectorAll('.tab-pane');
@@ -87,7 +102,7 @@ function renderFullPlaylist(playlist, currentIndex) {
         const isSinging = index === currentIndex;
         const itemClass = isSinging ? 'full-playlist-item current-singing' : 'full-playlist-item';
         
-        const isMySong = song.user === window.currentGuestName;
+        const isMySong = song.user === window.currentGuestName || (song.user && song.user.includes(`(added by ${window.currentGuestName})`));
         const userDisplay = isMySong ? 'Requested by: <span class="highlight-you">YOU</span>' : `Requested by: ${song.user}`;
         
         html += `
@@ -189,6 +204,20 @@ function renderSearchResults(results) {
 
 requestBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();
+    const isForFriend = forFriendToggle && forFriendToggle.checked;
+    const friendName = friendNameInput ? friendNameInput.value.trim() : '';
+
+    if (isForFriend && !friendName) {
+        msgDiv.textContent = "Please enter your friend's name";
+        msgDiv.className = 'request-status-msg error';
+        if (friendNameInput) friendNameInput.focus();
+        setTimeout(() => {
+            msgDiv.textContent = "";
+            msgDiv.className = 'request-status-msg';
+        }, 3000);
+        return;
+    }
+
     if (!url) {
         msgDiv.textContent = "Please enter a URL";
         msgDiv.className = 'request-status-msg error';
@@ -213,7 +242,8 @@ requestBtn.addEventListener('click', async () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                song: { url: url }
+                song: { url: url },
+                friendName: isForFriend ? friendName : null
             })
         });
         const data = await res.json();
@@ -273,12 +303,16 @@ async function addConfirmedSong(url) {
     if (btnSpinner) btnSpinner.style.display = 'inline-block';
 
     try {
+        const isForFriend = forFriendToggle && forFriendToggle.checked;
+        const friendName = friendNameInput ? friendNameInput.value.trim() : '';
+        
         const res = await fetch('api/guest_add_song', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 song: { url: url },
-                force: true
+                force: true,
+                friendName: isForFriend ? friendName : null
             })
         });
         const data = await res.json();
