@@ -134,3 +134,14 @@ test('the worker quotes every value it puts on the command line', function () {
     // realpath keeps a relative ../.. path from breaking the quoted form on Windows.
     assert_contains('realpath', $source);
 });
+
+test('the worker falls back to separate video and audio formats', function () {
+    $source = read_project_file('download_worker.php');
+
+    assert_contains(
+        'best[ext=mp4]/best/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio',
+        $source,
+        'Videos without a pre-merged format would fail instead of using adaptive streams'
+    );
+    assert_contains('--merge-output-format mp4', $source, 'Adaptive streams must be merged into the expected MP4 file');
+});

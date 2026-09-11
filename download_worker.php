@@ -157,9 +157,12 @@ workerLog('worker_event', [
     'yt_dlp' => $ytDlpPath
 ]);
 
-// Command to download
+// Prefer a ready-to-play MP4, but some YouTube videos expose only separate audio
+// and video streams. Let yt-dlp merge those streams instead of failing with
+// "Requested format is not available".
 $fullCmd = escapeshellarg($ytDlpPath)
-         . ' -f "best[ext=mp4]/best"'
+         . ' -f "best[ext=mp4]/best/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio"'
+         . ' --merge-output-format mp4'
          . ' -o ' . escapeshellarg($absoluteOutputPath)
          . ' --newline --progress-template "%(progress._percent_str)s"'
          . ' ' . escapeshellarg($videoUrl);
