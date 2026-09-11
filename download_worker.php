@@ -99,9 +99,12 @@ function summariseYtDlpError($stderr) {
         return '';
     }
 
-    foreach ($lines as $line) {
-        if (stripos($line, 'ERROR') !== false) {
-            return $line;
+    // yt-dlp may print a warning traceback before the actual terminal error. Read
+    // backwards and only accept its top-level ERROR lines so a PermissionError in
+    // a warning does not hide the real download failure.
+    for ($i = count($lines) - 1; $i >= 0; $i--) {
+        if (preg_match('/^ERROR\s*:/i', $lines[$i])) {
+            return $lines[$i];
         }
     }
 
@@ -197,8 +200,14 @@ workerLog('worker_event', [
 
 set_time_limit(0); // Unlimited execution time
 
+$cacheDir = __DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'yt-dlp-cache';
+if (!is_dir($cacheDir)) {
+    @mkdir($cacheDir, 0775, true);
+}
+
 $commandBase = escapeshellarg($ytDlpPath)
              . ' -o ' . escapeshellarg($absoluteOutputPath)
+             . ' --cache-dir ' . escapeshellarg($cacheDir)
              . ' --newline --progress-template "%(progress._percent_str)s"';
 
 // First try a ready-to-play file, which needs no ffmpeg merge.

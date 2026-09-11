@@ -116,6 +116,19 @@ test('summariseYtDlpError copes with Windows line endings', function () {
     assert_same('ERROR: [youtube] unavailable', summariseYtDlpError($stderr));
 });
 
+test('summariseYtDlpError ignores a cache traceback before the download error', function () {
+    load_function_copy('download_worker.php', 'summariseYtDlpError');
+
+    $stderr = "WARNING: Writing cache failed: Traceback\n"
+            . "PermissionError: [Errno 13] Permission denied: '/var/www/.cache'\n\n"
+            . "ERROR: [download] Got error: The read operation timed out\n";
+
+    assert_same(
+        'ERROR: [download] Got error: The read operation timed out',
+        summariseYtDlpError($stderr)
+    );
+});
+
 test('the worker reports every outcome to the activity log', function () {
     // "It failed silently" was the original bug. Each terminal path must log.
     $source = read_project_file('download_worker.php');
@@ -133,6 +146,13 @@ test('the worker quotes every value it puts on the command line', function () {
     assert_contains('escapeshellarg', $source, 'The yt-dlp command line is no longer escaped');
     // realpath keeps a relative ../.. path from breaking the quoted form on Windows.
     assert_contains('realpath', $source);
+});
+
+test('the worker keeps the yt-dlp cache inside its writable temp directory', function () {
+    $source = read_project_file('download_worker.php');
+
+    assert_contains("'yt-dlp-cache'", $source);
+    assert_contains("' --cache-dir ' . escapeshellarg(\$cacheDir)", $source);
 });
 
 test('the worker falls back to separate video and audio formats', function () {
