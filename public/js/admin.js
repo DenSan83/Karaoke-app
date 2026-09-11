@@ -385,6 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const badge = document.createElement('span');
                 badge.textContent = ' ⏳';
                 badge.title = 'Downloading...';
+                badge.id = `download-status-${video.id}`;
                 badge.classList.add('status-badge');
                 infoDiv.appendChild(badge);
             } else if (video.download_failed) {
@@ -604,6 +605,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch(progressApiUrl)
                     .then(res => res.json())
                     .then(data => {
+                        const statusBadge = document.getElementById(`download-status-${video.id}`);
+                        if (statusBadge) {
+                            const isAdaptive = data.status === 'adaptive';
+                            statusBadge.textContent = isAdaptive ? ' ⏳⏳' : ' ⏳';
+                            statusBadge.title = isAdaptive
+                                ? 'Downloading separate video and audio streams...'
+                                : 'Downloading...';
+                        }
                         const progressContainer = document.getElementById(`progress-${video.id}`);
                         if (progressContainer && data.progress) {
                             const progressFill = progressContainer.querySelector('.download-progress-fill');

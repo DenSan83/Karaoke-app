@@ -145,3 +145,10 @@ test('the worker falls back to separate video and audio formats', function () {
     );
     assert_contains('--merge-output-format mp4', $source, 'Adaptive streams must be merged into the expected MP4 file');
 });
+
+test('the worker identifies when yt-dlp selects separate streams', function () {
+    load_function_copy('download_worker.php', 'usesAdaptiveStreams');
+
+    assert_true(usesAdaptiveStreams('[info] abc123: Downloading 1 format(s): 137+140'));
+    assert_false(usesAdaptiveStreams('[info] abc123: Downloading 1 format(s): 18'));
+});

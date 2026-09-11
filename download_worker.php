@@ -108,6 +108,11 @@ function summariseYtDlpError($stderr) {
     return end($lines);
 }
 
+/** Detect yt-dlp's announcement that separate video and audio were selected. */
+function usesAdaptiveStreams($outputLine) {
+    return preg_match('/Downloading\s+\d+\s+format\(s\):\s+\S+\+\S+/i', (string)$outputLine) === 1;
+}
+
 /**
  * Persist a failure on every queue row waiting for this video.
  */
@@ -179,13 +184,18 @@ set_time_limit(0); // Unlimited execution time
 $pipes = [];
 $process = function_exists('proc_open') ? proc_open($fullCmd, $descriptorspec, $pipes) : false;
 $errors = '';
+$downloadStatus = 'downloading';
 
 if (is_resource($process)) {
     while ($s = fgets($pipes[1])) {
+        if (usesAdaptiveStreams($s)) {
+            $downloadStatus = 'adaptive';
+            file_put_contents($progressFile, json_encode(['status' => $downloadStatus, 'percent' => 0, 'ts' => time()]));
+        }
         // Parse percent from output (e.g. " 45.6%")
         if (preg_match('/(\d+(\.\d+)?)%/', $s, $matches)) {
             $percent = floatval($matches[1]);
-            file_put_contents($progressFile, json_encode(['status' => 'downloading', 'percent' => $percent, 'ts' => time()]));
+            file_put_contents($progressFile, json_encode(['status' => $downloadStatus, 'percent' => $percent, 'ts' => time()]));
         }
         flush();
     }

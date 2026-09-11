@@ -82,6 +82,13 @@ test('the queue renders a failed download instead of an endless hourglass', func
     assert_contains('Retry download', $source, 'The retry button lost its tooltip');
 });
 
+test('the queue distinguishes adaptive stream downloads', function () {
+    $source = read_project_file('public/js/admin.js');
+
+    assert_contains("data.status === 'adaptive'", $source);
+    assert_contains("' ⏳⏳'", $source);
+});
+
 test('the saved badge reads local_path, not the old local_file key', function () {
     $source = read_project_file('public/js/admin.js');
 
