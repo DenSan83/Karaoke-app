@@ -138,17 +138,22 @@ test('the worker quotes every value it puts on the command line', function () {
 test('the worker falls back to separate video and audio formats', function () {
     $source = read_project_file('download_worker.php');
 
-    assert_contains(
-        'best[ext=mp4]/best/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio',
-        $source,
-        'Videos without a pre-merged format would fail instead of using adaptive streams'
-    );
+    assert_contains('best[ext=mp4]/best', $source, 'The normal single-file attempt is missing');
+    assert_contains('bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio', $source);
     assert_contains('--merge-output-format mp4', $source, 'Adaptive streams must be merged into the expected MP4 file');
 });
 
-test('the worker identifies when yt-dlp selects separate streams', function () {
-    load_function_copy('download_worker.php', 'usesAdaptiveStreams');
+test('the worker logs the first format error before starting its fallback', function () {
+    $source = read_project_file('download_worker.php');
 
-    assert_true(usesAdaptiveStreams('[info] abc123: Downloading 1 format(s): 137+140'));
-    assert_false(usesAdaptiveStreams('[info] abc123: Downloading 1 format(s): 18'));
+    $errorCheck = strpos($source, "stripos(\$errors, 'Requested format is not available')");
+    $log = strpos($source, "'status' => 'format_fallback'");
+    $adaptiveMarker = strpos($source, "['status' => 'adaptive'");
+    $adaptiveCommand = strpos($source, 'bestvideo[ext=mp4]+bestaudio[ext=m4a]');
+
+    assert_true($errorCheck !== false, 'The fallback is not limited to a format-selection failure');
+    assert_true($log !== false && $adaptiveMarker !== false && $adaptiveCommand !== false);
+    assert_true($errorCheck < $log && $log < $adaptiveMarker && $adaptiveMarker < $adaptiveCommand,
+        'The first error must be logged before the adaptive status and command start');
+    assert_contains("'message' => \$firstError", $source, 'The fallback log omits the original error message');
 });

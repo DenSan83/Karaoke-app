@@ -108,9 +108,42 @@ function summariseYtDlpError($stderr) {
     return end($lines);
 }
 
-/** Detect yt-dlp's announcement that separate video and audio were selected. */
-function usesAdaptiveStreams($outputLine) {
-    return preg_match('/Downloading\s+\d+\s+format\(s\):\s+\S+\+\S+/i', (string)$outputLine) === 1;
+/** Run one yt-dlp attempt while publishing its progress to the admin queue. */
+function runYtDlpAttempt($command, $progressFile, $status) {
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w']
+    ];
+    $pipes = [];
+    $process = function_exists('proc_open') ? proc_open($command, $descriptors, $pipes) : false;
+
+    if (!is_resource($process)) {
+        return [
+            'exitCode' => -1,
+            'errors' => function_exists('proc_open')
+                ? 'proc_open() refused to start yt-dlp'
+                : 'proc_open() is disabled in php.ini'
+        ];
+    }
+
+    while ($line = fgets($pipes[1])) {
+        if (preg_match('/(\d+(\.\d+)?)%/', $line, $matches)) {
+            file_put_contents($progressFile, json_encode([
+                'status' => $status,
+                'percent' => (float)$matches[1],
+                'ts' => time()
+            ]));
+        }
+        flush();
+    }
+
+    $errors = (string)stream_get_contents($pipes[2]);
+    fclose($pipes[0]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    return ['exitCode' => proc_close($process), 'errors' => $errors];
 }
 
 /**
@@ -162,55 +195,43 @@ workerLog('worker_event', [
     'yt_dlp' => $ytDlpPath
 ]);
 
-// Prefer a ready-to-play MP4, but some YouTube videos expose only separate audio
-// and video streams. Let yt-dlp merge those streams instead of failing with
-// "Requested format is not available".
-$fullCmd = escapeshellarg($ytDlpPath)
-         . ' -f "best[ext=mp4]/best/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio"'
-         . ' --merge-output-format mp4'
-         . ' -o ' . escapeshellarg($absoluteOutputPath)
-         . ' --newline --progress-template "%(progress._percent_str)s"'
-         . ' ' . escapeshellarg($videoUrl);
-
-// Use proc_open to read output incrementally
-$descriptorspec = [
-    0 => ["pipe", "r"],  // stdin
-    1 => ["pipe", "w"],  // stdout
-    2 => ["pipe", "w"]   // stderr
-];
-
 set_time_limit(0); // Unlimited execution time
 
-$pipes = [];
-$process = function_exists('proc_open') ? proc_open($fullCmd, $descriptorspec, $pipes) : false;
-$errors = '';
-$downloadStatus = 'downloading';
+$commandBase = escapeshellarg($ytDlpPath)
+             . ' -o ' . escapeshellarg($absoluteOutputPath)
+             . ' --newline --progress-template "%(progress._percent_str)s"';
 
-if (is_resource($process)) {
-    while ($s = fgets($pipes[1])) {
-        if (usesAdaptiveStreams($s)) {
-            $downloadStatus = 'adaptive';
-            file_put_contents($progressFile, json_encode(['status' => $downloadStatus, 'percent' => 0, 'ts' => time()]));
-        }
-        // Parse percent from output (e.g. " 45.6%")
-        if (preg_match('/(\d+(\.\d+)?)%/', $s, $matches)) {
-            $percent = floatval($matches[1]);
-            file_put_contents($progressFile, json_encode(['status' => $downloadStatus, 'percent' => $percent, 'ts' => time()]));
-        }
-        flush();
-    }
+// First try a ready-to-play file, which needs no ffmpeg merge.
+$attempt = runYtDlpAttempt(
+    $commandBase . ' -f "best[ext=mp4]/best" ' . escapeshellarg($videoUrl),
+    $progressFile,
+    'downloading'
+);
+$returnVar = $attempt['exitCode'];
+$errors = $attempt['errors'];
 
-    $errors = (string)stream_get_contents($pipes[2]);
+// A format-selection failure means this video only offers separate streams. Record
+// the real first error before starting the slower adaptive download.
+if ($returnVar !== 0 && stripos($errors, 'Requested format is not available') !== false) {
+    $firstError = summariseYtDlpError($errors);
+    workerLog('worker_event', [
+        'status' => 'format_fallback',
+        'videoId' => $videoId,
+        'exitCode' => $returnVar,
+        'message' => $firstError,
+        'output' => substr(trim($errors), 0, 2000)
+    ]);
 
-    fclose($pipes[0]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-    $returnVar = proc_close($process);
-} else {
-    $errors = function_exists('proc_open')
-        ? 'proc_open() refused to start ' . $ytDlpPath
-        : 'proc_open() is disabled in php.ini';
-    $returnVar = -1;
+    file_put_contents($progressFile, json_encode(['status' => 'adaptive', 'percent' => 0, 'ts' => time()]));
+    $attempt = runYtDlpAttempt(
+        $commandBase
+        . ' -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio"'
+        . ' --merge-output-format mp4 ' . escapeshellarg($videoUrl),
+        $progressFile,
+        'adaptive'
+    );
+    $returnVar = $attempt['exitCode'];
+    $errors = $attempt['errors'];
 }
 
 // Cleanup progress file
